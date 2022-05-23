@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { TimeBlockDay } from "../components/TimeBlockDay";
 import { Task } from "../model/model";
 import { createUuid } from "../util/helpers";
 
@@ -42,7 +43,7 @@ export default function Tasks(props: TasksProps) {
   };
 
   return (
-    <div>
+    <div style={{ width: 800, margin: "auto" }}>
       <h1>Tasks</h1>
       <div>
         <h2>actions</h2>
@@ -63,6 +64,11 @@ export default function Tasks(props: TasksProps) {
             <div key={task.id}>{task.description}</div>
           ))}
         </div>
+
+        <h2>time block day</h2>
+
+        <TimeBlockDay start={"08:00"} end={"18:00"} majorUnit={1} />
+        <div style={{ marginBottom: 100 }} />
       </div>
     </div>
   );

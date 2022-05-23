@@ -14,3 +14,27 @@ a {
 * {
   box-sizing: border-box;
 }
+
+.top-drag,
+.bottom-drag {
+  position: absolute;
+
+  height: 10px;
+  background-color: transparent;
+  pointer-events: all;
+  width: 100%;
+}
+
+.top-drag {
+  top: -5px;
+}
+
+.bottom-drag {
+  bottom: -5px;
+}
+
+.top-drag:hover,
+.bottom-drag:hover {
+  cursor: ns-resize;
+  background-color: red;
+}
