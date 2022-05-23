@@ -76,8 +76,6 @@ export const TimeBlockDay = (props: TimeBlockDayProps) => {
     setTimeBlocks([...timeBlocks, task]);
   };
 
-  console.log("drag id", dragId);
-
   const handleMouseMove = (evt: React.MouseEvent) => {
     if (!dragId) return;
 
@@ -91,8 +89,6 @@ export const TimeBlockDay = (props: TimeBlockDayProps) => {
     let bounds = parent.getBoundingClientRect();
     let x = evt.clientX - bounds.left;
     let y = evt.clientY - bounds.top;
-
-    console.log(x, y);
 
     const newTime = timeMinute.every(30).round(hourScale.invert(y));
 
@@ -113,8 +109,6 @@ export const TimeBlockDay = (props: TimeBlockDayProps) => {
     });
 
     setTimeBlocks(newTimeBlocks);
-
-    console.log("mouse move", evt.clientX, evt.clientY);
   };
   // map out the width and position of each item based on overlaps
 
@@ -165,7 +159,6 @@ export const TimeBlockDay = (props: TimeBlockDayProps) => {
               hourScale={hourScale}
               block={block}
               onStartDrag={handleStartDrag}
-              onEndDrag={() => setDragId("")}
             />
           ))}
         </div>

@@ -1,0 +1,3 @@
+☐ Allow for time blocks to be dragged
+☐ Add some logic to show time blocks offset if they overlap
+☐ Improve the ESLint errors based on typical

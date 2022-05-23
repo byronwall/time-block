@@ -2,7 +2,7 @@ import { DragLoc, TimeBlockEntry } from "./TimeBlockDay";
 
 interface TimeBlockUnitProps {
   onStartDrag: (id: string, location: DragLoc) => void;
-  onEndDrag: (id: string) => void;
+
   hourScale: any;
   block: TimeBlockEntry;
 }
@@ -24,12 +24,10 @@ export function TimeBlockUnit(props: TimeBlockUnitProps) {
       <div
         className="top-drag"
         onMouseDown={() => props.onStartDrag(props.block.id, "top")}
-        onMouseUp={() => props.onEndDrag(props.block.id)}
       />
       <div
         className="bottom-drag"
         onMouseDown={() => props.onStartDrag(props.block.id, "bottom")}
-        onMouseUp={() => props.onEndDrag(props.block.id)}
       />
       {props.block.description}
     </div>
