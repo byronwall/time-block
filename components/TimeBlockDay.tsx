@@ -27,7 +27,7 @@ interface TimeBlockDayProps {
 
 export interface TimeBlockEntry {
   start: Date;
-  end: Date;
+  duration: number;
   description: string;
   id: string;
 }
@@ -44,7 +44,11 @@ export const TimeBlockDay = (props: TimeBlockDayProps) => {
   // track the id which is dragging in state
   const [dragId, setDragId] = useState("");
 
-  // track the drag location - top/bototm
+  // store the drag y start in state
+  const [dragStart, setDragStart] = useState(0);
+  const [dragStartTime, setDragStartTime] = useState(0);
+
+  // track the drag location - top/bottom
   const [dragLocation, setDragLocation] = useState<DragLoc>("bottom");
 
   // use a ref to track div
@@ -69,7 +73,7 @@ export const TimeBlockDay = (props: TimeBlockDayProps) => {
     const task: TimeBlockEntry = {
       id: createUuid(),
       description: newTaskText,
-      end: end,
+      duration: 60 * 60,
       start: start,
     };
 
@@ -86,22 +90,52 @@ export const TimeBlockDay = (props: TimeBlockDayProps) => {
     const parent = blockDivRef.current;
     if (!parent) return;
 
-    let bounds = parent.getBoundingClientRect();
-    let x = evt.clientX - bounds.left;
-    let y = evt.clientY - bounds.top;
-
-    const newTime = timeMinute.every(30).round(hourScale.invert(y));
-
     // update based on location
     // update start time
     const newTimeBlocks = timeBlocks.map((block) => {
       const newBLock = { ...block };
       if (newBLock.id === dragId) {
+        let bounds = parent.getBoundingClientRect();
+        let x = evt.clientX - bounds.left;
+
+        const dynamicDragStartTime = hourScale.invert(dragStart);
+
+        let y = evt.clientY - bounds.top;
+
+        const deltaTimeMs =
+          hourScale.invert(evt.clientY).getTime() -
+          dynamicDragStartTime.getTime();
+
+        console.log("y", {
+          y,
+          deltaTimeMs,
+          dragStartTime,
+          dragStart,
+          clientY: evt.clientY,
+        });
+
+        const newTime = timeMinute.every(30).round(hourScale.invert(y));
+
         if (dragLocation === "top") {
+          // change the start and reduce duration
           newBLock.start = newTime;
+          newBLock.duration =
+            newBLock.duration -
+            (newTime.getTime() - block.start.getTime()) / 1000;
         }
         if (dragLocation === "bottom") {
-          newBLock.end = newTime;
+          // get duration in seconds
+          const duration = (newTime.getTime() - block.start.getTime()) / 1000;
+          newBLock.duration = duration;
+        }
+
+        if (dragLocation === "all") {
+          // just move the start - same duration
+          const newTimeWithOffset = new Date(dragStartTime + deltaTimeMs);
+
+          console.log("newTimeWithOffset", newTimeWithOffset, newBLock.start);
+
+          newBLock.start = timeMinute.every(30).round(newTimeWithOffset);
         }
       }
 
@@ -112,9 +146,19 @@ export const TimeBlockDay = (props: TimeBlockDayProps) => {
   };
   // map out the width and position of each item based on overlaps
 
-  const handleStartDrag = (id: string, location: DragLoc) => {
+  const handleStartDrag = (
+    id: string,
+    location: DragLoc,
+    clientYStart: number
+  ) => {
+    const entry = timeBlocks.find((t) => t.id === id);
+    if (!entry) return;
+
+    setDragStartTime(entry.start.getTime());
+
     setDragId(id);
     setDragLocation(location);
+    setDragStart(clientYStart);
   };
 
   return (
@@ -126,6 +170,16 @@ export const TimeBlockDay = (props: TimeBlockDayProps) => {
           onChange={(evt) => setNewTaskText(evt.target.value)}
         />
         <button onClick={handleCreateTaskClick}>add</button>
+      </div>
+      <div
+        style={{
+          marginBottom: 30,
+          minHeight: 100,
+          width: 500,
+          border: "1px solid black",
+        }}
+      >
+        <b>unscheduled blocks</b>
       </div>
       <div style={{ display: "flex" }}>
         <div style={{ position: "relative", width: 100 }}>
