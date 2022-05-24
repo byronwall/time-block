@@ -5,6 +5,8 @@ interface TimeBlockUnitProps {
 
   hourScale: any;
   block: TimeBlockEntry;
+
+  column: number;
 }
 
 export function TimeBlockUnit(props: TimeBlockUnitProps) {
@@ -18,6 +20,7 @@ export function TimeBlockUnit(props: TimeBlockUnitProps) {
       style={{
         position: "absolute",
         top: props.hourScale(props.block.start),
+        left: props.column * 200,
         height: height,
         width: 200,
         border: "1px solid black",

@@ -1,7 +1,10 @@
+import { time } from "console";
+import { Hash } from "crypto";
 import {
   max,
   scaleBand,
   scaleTime,
+  sort,
   timeFormat,
   timeHour,
   timeMinute,
@@ -69,14 +72,50 @@ export const TimeBlockDay = (props: TimeBlockDayProps) => {
 
   const formatter = timeFormat("%H:%M");
 
+  // const tracked number of items in each slot
+  const sortedBlocks = [...timeBlocks];
+  sortedBlocks.sort((a, b) => a.start.getTime() - b.start.getTime());
+
+  const colHash = {};
+
+  const offsets = sortedBlocks.reduce<TimeBlockEntry[][]>((hash, block) => {
+    if (hash.length === 0) {
+      colHash[block.id] = 0;
+      hash.push([block]);
+      return hash;
+    }
+
+    // check if current block can be added after last item in each col array
+
+    let didAdd = false;
+    hash.forEach((col, i) => {
+      if (didAdd) return;
+      const lastBlock = col[col.length - 1];
+      if (
+        lastBlock.start.getTime() + lastBlock.duration * 1000 <=
+        block.start.getTime()
+      ) {
+        col.push(block);
+        colHash[block.id] = i;
+        didAdd = true;
+        return;
+      }
+    });
+
+    if (!didAdd) {
+      hash.push([block]);
+      colHash[block.id] = hash.length - 1;
+    }
+
+    return hash;
+  }, []);
+
   const handleCreateTaskClick = async () => {
     const maxEndTime = timeBlocks.reduce((max, block) => {
       return Math.max(max, block.start.getTime() + block.duration * 1000);
     }, start.getTime());
 
     const newStartTime = new Date(maxEndTime);
-
-    console.log("maxEndTime", newStartTime, start);
 
     // add new task to state
     const task: TimeBlockEntry = {
@@ -207,6 +246,7 @@ export const TimeBlockDay = (props: TimeBlockDayProps) => {
                 hourScale={hourScale}
                 block={block}
                 onStartDrag={handleStartDrag}
+                column={colHash[block.id]}
               />
             ))}
         </div>
