@@ -8,15 +8,17 @@ interface TimeBlockUnitProps {
 }
 
 export function TimeBlockUnit(props: TimeBlockUnitProps) {
+  const zeroPx = props.hourScale(0);
+  const durationPx = props.hourScale(new Date(props.block.duration * 1000));
+
+  const height = Math.max(durationPx - zeroPx, 0);
+
   return (
     <div
       style={{
         position: "absolute",
         top: props.hourScale(props.block.start),
-        height:
-          props.hourScale(
-            new Date(props.block.start.getTime() + props.block.duration * 1000)
-          ) - props.hourScale(props.block.start),
+        height: height,
         width: 200,
         border: "1px solid black",
         background: "red",

@@ -1,4 +1,5 @@
 import {
+  max,
   scaleBand,
   scaleTime,
   timeFormat,
@@ -6,7 +7,7 @@ import {
   timeMinute,
   timeParse,
 } from "d3";
-import React, { useRef, useState } from "react";
+import React, { useDebugValue, useRef, useState } from "react";
 import { createUuid } from "../util/helpers";
 import { TimeBlockUnit } from "./TimeBlockUnit";
 // render from a start time
@@ -69,12 +70,20 @@ export const TimeBlockDay = (props: TimeBlockDayProps) => {
   const formatter = timeFormat("%H:%M");
 
   const handleCreateTaskClick = async () => {
+    const maxEndTime = timeBlocks.reduce((max, block) => {
+      return Math.max(max, block.start.getTime() + block.duration * 1000);
+    }, start.getTime());
+
+    const newStartTime = new Date(maxEndTime);
+
+    console.log("maxEndTime", newStartTime, start);
+
     // add new task to state
     const task: TimeBlockEntry = {
       id: createUuid(),
       description: newTaskText,
       duration: 60 * 60,
-      start: start,
+      start: newStartTime,
     };
 
     setTimeBlocks([...timeBlocks, task]);
@@ -106,14 +115,6 @@ export const TimeBlockDay = (props: TimeBlockDayProps) => {
           hourScale.invert(evt.clientY).getTime() -
           dynamicDragStartTime.getTime();
 
-        console.log("y", {
-          y,
-          deltaTimeMs,
-          dragStartTime,
-          dragStart,
-          clientY: evt.clientY,
-        });
-
         const newTime = timeMinute.every(30).round(hourScale.invert(y));
 
         if (dragLocation === "top") {
@@ -132,8 +133,6 @@ export const TimeBlockDay = (props: TimeBlockDayProps) => {
         if (dragLocation === "all") {
           // just move the start - same duration
           const newTimeWithOffset = new Date(dragStartTime + deltaTimeMs);
-
-          console.log("newTimeWithOffset", newTimeWithOffset, newBLock.start);
 
           newBLock.start = timeMinute.every(30).round(newTimeWithOffset);
         }
@@ -154,7 +153,9 @@ export const TimeBlockDay = (props: TimeBlockDayProps) => {
     const entry = timeBlocks.find((t) => t.id === id);
     if (!entry) return;
 
-    setDragStartTime(entry.start.getTime());
+    if (entry.start) {
+      setDragStartTime(entry.start.getTime());
+    }
 
     setDragId(id);
     setDragLocation(location);
@@ -171,16 +172,7 @@ export const TimeBlockDay = (props: TimeBlockDayProps) => {
         />
         <button onClick={handleCreateTaskClick}>add</button>
       </div>
-      <div
-        style={{
-          marginBottom: 30,
-          minHeight: 100,
-          width: 500,
-          border: "1px solid black",
-        }}
-      >
-        <b>unscheduled blocks</b>
-      </div>
+
       <div style={{ display: "flex" }}>
         <div style={{ position: "relative", width: 100 }}>
           {hours.map((hour, idx) => (
@@ -207,14 +199,16 @@ export const TimeBlockDay = (props: TimeBlockDayProps) => {
           onMouseMove={handleMouseMove}
           onMouseUp={() => setDragId("")}
         >
-          {timeBlocks.map((block) => (
-            <TimeBlockUnit
-              key={block.id}
-              hourScale={hourScale}
-              block={block}
-              onStartDrag={handleStartDrag}
-            />
-          ))}
+          {timeBlocks
+            .filter((c) => c.start)
+            .map((block) => (
+              <TimeBlockUnit
+                key={block.id}
+                hourScale={hourScale}
+                block={block}
+                onStartDrag={handleStartDrag}
+              />
+            ))}
         </div>
       </div>
     </div>
