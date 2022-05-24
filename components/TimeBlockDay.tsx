@@ -1,27 +1,8 @@
-import { time } from "console";
-import { Hash } from "crypto";
-import {
-  max,
-  scaleBand,
-  scaleTime,
-  sort,
-  timeFormat,
-  timeHour,
-  timeMinute,
-  timeParse,
-} from "d3";
-import React, { useDebugValue, useRef, useState } from "react";
+import { scaleTime, timeFormat, timeHour, timeMinute, timeParse } from "d3";
+import React, { useRef, useState } from "react";
+
 import { createUuid } from "../util/helpers";
 import { TimeBlockUnit } from "./TimeBlockUnit";
-// render from a start time
-
-// render a block of items
-
-// add a grid
-
-// allow dragging items on that grid
-
-// allow dragging the bottom/top edges
 
 interface TimeBlockDayProps {
   start: string;

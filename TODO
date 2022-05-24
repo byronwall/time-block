@@ -1,3 +1,16 @@
-☐ Allow for time blocks to be dragged
-☐ Add some logic to show time blocks offset if they overlap
+✔ Allow for time blocks to be dragged @done(22-05-23 23:27)
+✔ Add some logic to show time blocks offset if they overlap @done(22-05-23 23:27)
 ☐ Improve the ESLint errors based on typical
+☐ Add an auto-shrink button to attempt a best fit
+☐ Add ability to change text once created
+☐ Add some visual indication to the dragging item
+☐ Allow for a default time to be set
+☐ Add some minor gridlines
+☐ Add some controls to change the default day duration
+☐ Allow the "clicks" to be settable
+
+Think about:
+    ☐ Consider how to track progress within a day
+    ☐ Track multiple days
+    ☐ Save time blocks to database
+    ☐ Provide some summary of the day
