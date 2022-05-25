@@ -1,3 +1,4 @@
+import { Button, FormGroup, InputGroup } from "@blueprintjs/core";
 import { scaleTime, timeFormat, timeHour, timeMinute, timeParse } from "d3";
 import React, { useRef, useState } from "react";
 
@@ -107,9 +108,13 @@ export const TimeBlockDay = (props: TimeBlockDayProps) => {
     };
 
     setTimeBlocks([...timeBlocks, task]);
+    setNewTaskText("");
   };
 
   const handleMouseMove = (evt: React.MouseEvent) => {
+    evt.stopPropagation();
+    evt.preventDefault();
+
     if (!dragId) return;
 
     // update the dragging item
@@ -182,15 +187,37 @@ export const TimeBlockDay = (props: TimeBlockDayProps) => {
     setDragStart(clientYStart);
   };
 
+  const handleBlockChange = (id: string, newBLock: TimeBlockEntry) => {
+    const newTimeBlocks = timeBlocks.map((block) => {
+      if (block.id === id) {
+        return newBLock;
+      }
+      return block;
+    });
+
+    setTimeBlocks(newTimeBlocks);
+  };
+
+  const handleBlockDelete = (id: string) => {
+    const newTimeBlocks = timeBlocks.filter((block) => block.id !== id);
+    setTimeBlocks(newTimeBlocks);
+  };
+
   return (
     <div>
       <div style={{ margin: 30 }}>
-        <input
-          type="text"
-          value={newTaskText}
-          onChange={(evt) => setNewTaskText(evt.target.value)}
-        />
-        <button onClick={handleCreateTaskClick}>add</button>
+        <FormGroup inline>
+          <InputGroup
+            value={newTaskText}
+            onChange={(evt) => setNewTaskText(evt.target.value)}
+            onKeyDown={(evt) => {
+              if (evt.key === "Enter") {
+                handleCreateTaskClick();
+              }
+            }}
+            rightElement={<Button onClick={handleCreateTaskClick} text="add" />}
+          />
+        </FormGroup>
       </div>
 
       <div style={{ display: "flex" }}>
@@ -219,23 +246,19 @@ export const TimeBlockDay = (props: TimeBlockDayProps) => {
           onMouseMove={handleMouseMove}
           onMouseUp={() => setDragId("")}
         >
-          {timeBlocks
-            .filter((c) => c.start)
-            .map((block) => (
-              <TimeBlockUnit
-                key={block.id}
-                hourScale={hourScale}
-                block={block}
-                onStartDrag={handleStartDrag}
-                column={colHash[block.id]}
-              />
-            ))}
+          {timeBlocks.map((block) => (
+            <TimeBlockUnit
+              key={block.id}
+              hourScale={hourScale}
+              block={block}
+              column={colHash[block.id]}
+              onStartDrag={handleStartDrag}
+              onChange={handleBlockChange}
+              onDelete={handleBlockDelete}
+            />
+          ))}
         </div>
       </div>
     </div>
   );
 };
-
-function range(size, startAt = 0) {
-  return [...Array(size).keys()].map((i) => i + startAt);
-}

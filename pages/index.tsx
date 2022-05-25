@@ -44,32 +44,14 @@ export default function Tasks(props: TasksProps) {
 
   return (
     <div style={{ width: 800, margin: "auto" }}>
-      <h1>Tasks</h1>
-      <div>
-        <h2>actions</h2>
-        <button onClick={handleLoadClick}>Load All</button>
+      <h1>Time Block Schedule</h1>
+      <p>
+        Create new blocks with the input. Drag them around to change time or
+        duration.
+      </p>
 
-        <div>
-          <input
-            type="text"
-            value={newTaskText}
-            onChange={(evt) => setNewTaskText(evt.target.value)}
-          />
-          <button onClick={handleCreate}>Create</button>
-        </div>
-
-        <h2>task list</h2>
-        <div>
-          {Object.values(tasks).map((task) => (
-            <div key={task.id}>{task.description}</div>
-          ))}
-        </div>
-
-        <h2>time block day</h2>
-
-        <TimeBlockDay start={"08:00"} end={"18:00"} majorUnit={1} />
-        <div style={{ marginBottom: 100 }} />
-      </div>
+      <TimeBlockDay start={"08:00"} end={"18:00"} majorUnit={1} />
+      <div style={{ marginBottom: 100 }} />
     </div>
   );
 

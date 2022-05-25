@@ -47,4 +47,13 @@ a {
   pointer-events: all;
   width: 100%;
   cursor: move;
+
+  background: red;
+  opacity: 0.2;
+}
+
+.header-buttons {
+  position: absolute;
+  right: 0;
+  top: 0;
 }
