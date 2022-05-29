@@ -9,10 +9,14 @@ interface TimeBlockDayProps {
   start: string;
   end: string;
   majorUnit: number;
+
+  defaultEntries?: TimeBlockEntry[];
+
+  onEntryChange(entries: TimeBlockEntry[]): void;
 }
 
 export interface TimeBlockEntry {
-  start: Date;
+  start?: number;
   duration: number;
   description: string;
   id: string;
@@ -22,7 +26,9 @@ export type DragLoc = "top" | "bottom" | "all";
 
 export const TimeBlockDay = (props: TimeBlockDayProps) => {
   // store array of time blocks in state
-  const [timeBlocks, setTimeBlocks] = useState<TimeBlockEntry[]>([]);
+
+  const timeBlocks = props.defaultEntries ?? [];
+  const setTimeBlocks = props.onEntryChange;
 
   // store new task text in state
   const [newTaskText, setNewTaskText] = useState("");
@@ -36,6 +42,13 @@ export const TimeBlockDay = (props: TimeBlockDayProps) => {
 
   // track the drag location - top/bottom
   const [dragLocation, setDragLocation] = useState<DragLoc>("bottom");
+
+  const scheduledTasks = timeBlocks.filter(
+    (block) => block.start !== undefined
+  );
+  const unscheduledTasks = timeBlocks.filter(
+    (block) => block.start === undefined
+  );
 
   // use a ref to track div
 
@@ -55,8 +68,8 @@ export const TimeBlockDay = (props: TimeBlockDayProps) => {
   const formatter = timeFormat("%H:%M");
 
   // const tracked number of items in each slot
-  const sortedBlocks = [...timeBlocks];
-  sortedBlocks.sort((a, b) => a.start.getTime() - b.start.getTime());
+  const sortedBlocks = [...scheduledTasks];
+  sortedBlocks.sort((a, b) => a.start - b.start);
 
   const colHash = {};
 
@@ -73,10 +86,7 @@ export const TimeBlockDay = (props: TimeBlockDayProps) => {
     hash.forEach((col, i) => {
       if (didAdd) return;
       const lastBlock = col[col.length - 1];
-      if (
-        lastBlock.start.getTime() + lastBlock.duration * 1000 <=
-        block.start.getTime()
-      ) {
+      if (lastBlock.start + lastBlock.duration * 1000 <= block.start) {
         col.push(block);
         colHash[block.id] = i;
         didAdd = true;
@@ -92,12 +102,16 @@ export const TimeBlockDay = (props: TimeBlockDayProps) => {
     return hash;
   }, []);
 
-  const handleCreateTaskClick = async () => {
-    const maxEndTime = timeBlocks.reduce((max, block) => {
-      return Math.max(max, block.start.getTime() + block.duration * 1000);
+  function getFirstStartTime() {
+    const maxEndTime = scheduledTasks.reduce((max, block) => {
+      return Math.max(max, block.start + block.duration * 1000);
     }, start.getTime());
 
-    const newStartTime = new Date(maxEndTime);
+    return maxEndTime;
+  }
+
+  const handleCreateTaskClick = async () => {
+    const newStartTime = getFirstStartTime();
 
     // add new task to state
     const task: TimeBlockEntry = {
@@ -144,14 +158,13 @@ export const TimeBlockDay = (props: TimeBlockDayProps) => {
 
         if (dragLocation === "top") {
           // change the start and reduce duration
-          newBLock.start = newTime;
+          newBLock.start = newTime.getTime();
           newBLock.duration =
-            newBLock.duration -
-            (newTime.getTime() - block.start.getTime()) / 1000;
+            newBLock.duration - (newTime.getTime() - block.start) / 1000;
         }
         if (dragLocation === "bottom") {
           // get duration in seconds
-          const duration = (newTime.getTime() - block.start.getTime()) / 1000;
+          const duration = (newTime.getTime() - block.start) / 1000;
           newBLock.duration = duration;
         }
 
@@ -159,7 +172,10 @@ export const TimeBlockDay = (props: TimeBlockDayProps) => {
           // just move the start - same duration
           const newTimeWithOffset = new Date(dragStartTime + deltaTimeMs);
 
-          newBLock.start = timeMinute.every(30).round(newTimeWithOffset);
+          newBLock.start = timeMinute
+            .every(30)
+            .round(newTimeWithOffset)
+            .getTime();
         }
       }
 
@@ -179,7 +195,7 @@ export const TimeBlockDay = (props: TimeBlockDayProps) => {
     if (!entry) return;
 
     if (entry.start) {
-      setDragStartTime(entry.start.getTime());
+      setDragStartTime(entry.start);
     }
 
     setDragId(id);
@@ -203,6 +219,32 @@ export const TimeBlockDay = (props: TimeBlockDayProps) => {
     setTimeBlocks(newTimeBlocks);
   };
 
+  const handleBlockUnschedule = (id: string) => {
+    const newTimeBlocks = [...timeBlocks];
+    newTimeBlocks.forEach((block) => {
+      if (block.id === id) {
+        block.start = undefined;
+      }
+    });
+
+    setTimeBlocks(newTimeBlocks);
+  };
+  const handleBlockSchedule = (id: string) => {
+    const newTimeBlocks = [...timeBlocks];
+    newTimeBlocks.forEach((block) => {
+      if (block.id === id) {
+        block.start = getFirstStartTime();
+      }
+    });
+
+    setTimeBlocks(newTimeBlocks);
+  };
+
+  const TimeBlockCommon = {
+    onChange: handleBlockChange,
+    onDelete: handleBlockDelete,
+  };
+
   return (
     <div>
       <div style={{ margin: 30 }}>
@@ -218,6 +260,18 @@ export const TimeBlockDay = (props: TimeBlockDayProps) => {
             rightElement={<Button onClick={handleCreateTaskClick} text="add" />}
           />
         </FormGroup>
+      </div>
+
+      <div>
+        <h3>unscheduled</h3>
+        {unscheduledTasks.map((block) => (
+          <TimeBlockUnit
+            {...TimeBlockCommon}
+            key={block.id}
+            block={block}
+            onSchedule={handleBlockSchedule}
+          />
+        ))}
       </div>
 
       <div style={{ display: "flex" }}>
@@ -246,15 +300,15 @@ export const TimeBlockDay = (props: TimeBlockDayProps) => {
           onMouseMove={handleMouseMove}
           onMouseUp={() => setDragId("")}
         >
-          {timeBlocks.map((block) => (
+          {scheduledTasks.map((block) => (
             <TimeBlockUnit
+              {...TimeBlockCommon}
               key={block.id}
               hourScale={hourScale}
               block={block}
               column={colHash[block.id]}
               onStartDrag={handleStartDrag}
-              onChange={handleBlockChange}
-              onDelete={handleBlockDelete}
+              onUnschedule={handleBlockUnschedule}
             />
           ))}
         </div>

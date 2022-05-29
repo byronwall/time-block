@@ -1,5 +1,6 @@
 // Next.js API route support: https://nextjs.org/docs/api-routes/introduction
 
+import { TaskList } from "../../components/TaskListSelector";
 import { Task } from "../../model/model";
 import { insertTask } from "../../util/db";
 
@@ -8,7 +9,7 @@ export default async function handler(req, res) {
 
   console.log("req.body:", req.body);
 
-  const task = req.body as Task;
+  const task = req.body as TaskList;
 
   const result = await insertTask(task);
 

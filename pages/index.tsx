@@ -1,45 +1,48 @@
+import { Button, FormGroup, InputGroup } from "@blueprintjs/core";
 import { useState } from "react";
-import { TimeBlockDay } from "../components/TimeBlockDay";
-import { Task } from "../model/model";
+
+import { TaskList, TaskListSelector } from "../components/TaskListSelector";
+import { TimeBlockDay, TimeBlockEntry } from "../components/TimeBlockDay";
+import { findAll } from "../util/db";
 import { createUuid } from "../util/helpers";
+import { quickPost } from "../util/quickPost";
 
-interface TasksProps {}
-
-type TaskHash = { [key: string]: Task };
+interface TasksProps {
+  taskLists: TaskList[];
+  activeTaskList: TaskList;
+}
 
 export default function Tasks(props: TasksProps) {
-  // store task hash in state
-  const [tasks, setTasks] = useState<TaskHash>({});
+  // store active task list in state
 
-  // store new task text in state
-  const [newTaskText, setNewTaskText] = useState("");
-
-  const handleLoadClick = async () => {
-    await loadAllTasks();
+  const defaultTaskList: TaskList = {
+    name: "default",
+    timeBlockEntries: [],
+    id: createUuid(),
   };
 
-  const handleCreate = async () => {
-    console.log("create");
+  const [activeTaskList, setActiveTaskList] = useState(
+    props.activeTaskList ?? defaultTaskList
+  );
 
-    const task = {
-      id: createUuid(),
-      description: newTaskText,
-      completed: false,
-      duration: 0,
-      end: 0,
-      start: 0,
-    };
+  const handleSaveTaskList = async () => {
+    await quickPost("/api/insertTaskList", activeTaskList);
 
-    const result = await fetch("/api/insertTask", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(task),
-    });
+    // TODO: follow this with a reload of available
+  };
 
-    // then load new data
-    loadAllTasks();
+  const handleNewTaskList = (entries: TimeBlockEntry[]) => {
+    const newTaskList = { ...activeTaskList };
+    newTaskList.timeBlockEntries = entries;
+
+    setActiveTaskList(newTaskList);
+  };
+
+  const handleTaskListNameChange = (name: string) => {
+    const newTaskList = { ...activeTaskList };
+    newTaskList.name = name;
+
+    setActiveTaskList(newTaskList);
   };
 
   return (
@@ -50,15 +53,64 @@ export default function Tasks(props: TasksProps) {
         duration.
       </p>
 
-      <TimeBlockDay start={"08:00"} end={"18:00"} majorUnit={1} />
+      <Button
+        text="create new list"
+        onClick={() => {
+          setActiveTaskList({
+            id: createUuid(),
+            name: "new list",
+            timeBlockEntries: [],
+          });
+        }}
+      />
+
+      <TaskListSelector
+        items={props.taskLists}
+        activeItem={activeTaskList}
+        onItemSelect={(item) => {
+          setActiveTaskList(item);
+        }}
+      />
+
+      <div>
+        <h3>choose a task list</h3>
+        <TaskListSelector
+          items={props.taskLists}
+          activeItem={activeTaskList}
+          onItemSelect={setActiveTaskList}
+        />
+      </div>
+
+      <FormGroup>
+        <InputGroup
+          value={activeTaskList.name}
+          onChange={(evt) => handleTaskListNameChange(evt.target.value)}
+        />
+      </FormGroup>
+      <Button text="save all" onClick={handleSaveTaskList} />
+
+      <TimeBlockDay
+        start={"08:00"}
+        end={"18:00"}
+        majorUnit={1}
+        defaultEntries={activeTaskList.timeBlockEntries}
+        onEntryChange={handleNewTaskList}
+      />
       <div style={{ marginBottom: 100 }} />
     </div>
   );
+}
 
-  async function loadAllTasks() {
-    const results = await fetch("/api/getAllTasks");
-    const data = (await results.json()) as TaskHash;
+export async function getServerSideProps(context): Promise<{
+  props: Partial<TasksProps>;
+}> {
+  let allTaskLists = await findAll();
 
-    setTasks(data);
-  }
+  let values = Object.values(allTaskLists);
+
+  return {
+    props: {
+      taskLists: values ?? [],
+    },
+  };
 }

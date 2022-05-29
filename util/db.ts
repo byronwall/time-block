@@ -1,4 +1,5 @@
 import Redis from "ioredis";
+import { TaskList } from "../components/TaskListSelector";
 import { Task } from "../model/model";
 
 const { REDIS_URL = "" } = process.env;
@@ -22,32 +23,22 @@ client.on("error", (err) => {
 });
 
 export async function findAll() {
-  const reply = await client.hgetall("DATA");
+  const reply = await client.hgetall("BLOCKS");
 
-  const obj: { [key: string]: Task } = {};
+  console.log("reply:", reply);
+
+  const obj: { [key: string]: TaskList } = {};
 
   for (let key in reply) {
-    obj[key] = JSON.parse(reply[key]);
+    obj[key] = JSON.parse(reply[key]) as TaskList;
   }
 
   return obj;
 }
 
-export async function findOne(name: string, version: string) {
-  const reply = await client.hget(name, version);
-
-  if (!reply) {
-    return null;
-  }
-
-  let record: Task = JSON.parse(reply);
-
-  return record;
-}
-
-export async function insertTask(data: Task) {
+export async function insertTask(data: TaskList) {
   console.log("insertTask:", data);
   const value = JSON.stringify(data);
-  const reply = await client.hset("DATA", data.id, value);
+  const reply = await client.hset("BLOCKS", data.id, value);
   return reply;
 }

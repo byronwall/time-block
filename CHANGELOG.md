@@ -1,5 +1,11 @@
 # Time Block changelog
 
+## 0.0.3 -- 2022-05-28 22:59:59
+
+- Allow for unscheduled tasks
+- Allow the time block info to be saved to DB
+- Change to storing dates as timestamps to avoid JSON problems
+
 ## 0.0.2 -- 2022-05-24 23:00:24
 
 - Working out support for time block view with dragging
