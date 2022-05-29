@@ -6,7 +6,6 @@ const { REDIS_URL = "" } = process.env;
 // delete process.env.REDIS_URL;
 
 if (!REDIS_URL) {
-  console.log("env:", process.env);
   throw new Error("Missing REDIS_URL environment variable");
 }
 
@@ -25,8 +24,6 @@ client.on("error", (err) => {
 export async function findAll() {
   const reply = await client.hgetall("BLOCKS");
 
-  console.log("reply:", reply);
-
   const obj: { [key: string]: TaskList } = {};
 
   for (let key in reply) {
@@ -37,7 +34,6 @@ export async function findAll() {
 }
 
 export async function insertTask(data: TaskList) {
-  console.log("insertTask:", data);
   const value = JSON.stringify(data);
   const reply = await client.hset("BLOCKS", data.id, value);
   return reply;

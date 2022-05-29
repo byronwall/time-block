@@ -7,8 +7,6 @@ import { insertTask } from "../../util/db";
 export default async function handler(req, res) {
   // do the insert -- return 200
 
-  console.log("req.body:", req.body);
-
   const task = req.body as TaskList;
 
   const result = await insertTask(task);
