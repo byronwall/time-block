@@ -64,14 +64,6 @@ export default function Tasks(props: TasksProps) {
         }}
       />
 
-      <TaskListSelector
-        items={props.taskLists}
-        activeItem={activeTaskList}
-        onItemSelect={(item) => {
-          setActiveTaskList(item);
-        }}
-      />
-
       <div>
         <h3>choose a task list</h3>
         <TaskListSelector
