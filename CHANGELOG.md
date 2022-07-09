@@ -1,5 +1,11 @@
 # Time Block changelog
 
+## 0.0.5 -- 2022-07-09 11:01:23
+
+- Move to route based task list loading
+- Task editing details are stored on the specific route now
+- Add a function to get single task list details
+
 ## 0.0.4 -- 2022-05-29 00:21:38
 
 - Ensure Blueprint has all needed packages and CSS

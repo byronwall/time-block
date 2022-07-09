@@ -33,6 +33,14 @@ export async function findAll() {
   return obj;
 }
 
+export async function findOneTaskList(id: string) {
+  const reply = await client.hget("BLOCKS", id);
+
+  const taskList = JSON.parse(reply) as TaskList;
+
+  return taskList;
+}
+
 export async function insertTask(data: TaskList) {
   const value = JSON.stringify(data);
   const reply = await client.hset("BLOCKS", data.id, value);
