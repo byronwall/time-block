@@ -7,7 +7,10 @@ import { findOneTaskList } from "../../util/db";
 import { quickPost } from "../../util/quickPost";
 
 import { handleBooleanChange } from "../../components/helpers";
-import { ColorSansHandler, TaskColorContext } from "./ColorSansHandler";
+import {
+  ColorSansHandler,
+  TaskColorContext,
+} from "../../components/ColorSansHandler";
 
 interface TimeBlockViewProps {
   activeTaskList: TaskList;
@@ -61,6 +64,7 @@ export default function TimeBlockView(props: TimeBlockViewProps) {
       <Button text="save all" onClick={handleSaveTaskList} />
 
       <Switch
+        label="color by priority"
         checked={colorContext.isColoredByPriority}
         onChange={handleBooleanChange((isColoredByPriority) =>
           onChange({ isColoredByPriority })

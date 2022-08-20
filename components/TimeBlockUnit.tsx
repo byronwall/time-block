@@ -1,6 +1,6 @@
 import { Button, InputGroup } from "@blueprintjs/core";
 import { CSSProperties, useContext, useEffect, useState } from "react";
-import { TaskColorContext } from "../pages/blocks/ColorSansHandler";
+import { TaskColorContext } from "./ColorSansHandler";
 import { DragLoc, TimeBlockEntry } from "./TimeBlockDay";
 
 interface TimeBlockUnitProps {
