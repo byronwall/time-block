@@ -1,5 +1,11 @@
 # Time Block changelog
 
+## 0.0.6 -- 2022-08-20 13:35:24
+
+- Add color for priority and a setting to color by priority
+- Add keyboard shortcuts to quickly set the priority
+- Start to warn on props destructure
+
 ## 0.0.5 -- 2022-07-09 11:01:23
 
 - Move to route based task list loading

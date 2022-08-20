@@ -20,11 +20,12 @@ export interface TimeBlockEntry {
   duration: number;
   description: string;
   id: string;
+  priority?: number;
 }
 
 export type DragLoc = "top" | "bottom" | "all";
 
-export const TimeBlockDay = (props: TimeBlockDayProps) => {
+export function TimeBlockDay(props: TimeBlockDayProps) {
   // store array of time blocks in state
 
   const timeBlocks = props.defaultEntries ?? [];
@@ -315,4 +316,4 @@ export const TimeBlockDay = (props: TimeBlockDayProps) => {
       </div>
     </div>
   );
-};
+}

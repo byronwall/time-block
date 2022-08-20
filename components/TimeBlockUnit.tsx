@@ -1,5 +1,6 @@
 import { Button, InputGroup } from "@blueprintjs/core";
-import { CSSProperties, useState } from "react";
+import { CSSProperties, useContext, useEffect, useState } from "react";
+import { TaskColorContext } from "../pages/blocks/ColorSansHandler";
 import { DragLoc, TimeBlockEntry } from "./TimeBlockDay";
 
 interface TimeBlockUnitProps {
@@ -17,9 +18,19 @@ interface TimeBlockUnitProps {
 }
 
 export function TimeBlockUnit(props: TimeBlockUnitProps) {
-  const zeroPx = props.hourScale?.(0) ?? 0;
-  const durationPx =
-    props.hourScale?.(new Date(props.block.duration * 1000)) ?? 50;
+  const {
+    onStartDrag,
+    onDelete,
+    onUnschedule,
+    onSchedule,
+    onChange,
+    block,
+    hourScale,
+    column,
+  } = props;
+
+  const zeroPx = hourScale?.(0) ?? 0;
+  const durationPx = hourScale?.(new Date(block.duration * 1000)) ?? 50;
 
   const height = Math.max(durationPx - zeroPx, 0);
 
@@ -27,25 +38,55 @@ export function TimeBlockUnit(props: TimeBlockUnitProps) {
   const [isEdit, setIsEdit] = useState(false);
 
   // track edit text in state
-  const [editText, setEditText] = useState(props.block.description);
+  const [editText, setEditText] = useState(block.description);
 
   const acceptEditText = () => {
     setIsEdit(false);
-    props.onChange(props.block.id, {
-      ...props.block,
+    onChange(block.id, {
+      ...block,
       description: editText,
     });
   };
 
-  const style: CSSProperties = props.hourScale
+  const style: CSSProperties = hourScale
     ? {
         position: "absolute",
-        top: props.hourScale(props.block.start),
-        left: props.column * 200,
+        top: hourScale(block.start),
+        left: column * 200,
       }
     : { position: "relative" };
 
-  const isScheduled = props.block.start !== undefined;
+  const isScheduled = block.start !== undefined;
+
+  const colorContext = useContext(TaskColorContext);
+
+  const backgroundColor = colorContext.isColoredByPriority
+    ? colorContext.getColorFromPriority(block.priority ?? 5)
+    : "#C0DFF7";
+
+  const [isMouseInside, setIsMouseInside] = useState(false);
+
+  useEffect(() => {
+    // bind a key press handler to the document to detect key press without focus
+    function handleKeyDown(e: KeyboardEvent) {
+      if (isMouseInside) {
+        const possibleNum = +e.key;
+
+        if (possibleNum >= 1 && possibleNum <= 5) {
+          onChange(block.id, {
+            ...block,
+            priority: possibleNum,
+          });
+        }
+      }
+    }
+
+    document.addEventListener("keydown", handleKeyDown);
+
+    return function cleanup() {
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isMouseInside, onChange, block]);
 
   return (
     <div
@@ -54,7 +95,10 @@ export function TimeBlockUnit(props: TimeBlockUnitProps) {
         height: height,
         width: 200,
         border: "1px solid black",
+        backgroundColor,
       }}
+      onMouseEnter={() => setIsMouseInside(true)}
+      onMouseLeave={() => setIsMouseInside(false)}
     >
       {isScheduled && (
         <>
@@ -62,7 +106,7 @@ export function TimeBlockUnit(props: TimeBlockUnitProps) {
             className="body-drag"
             onMouseDown={(evt) => {
               evt.stopPropagation();
-              props.onStartDrag(props.block.id, "all", evt.clientY);
+              onStartDrag(block.id, "all", evt.clientY);
             }}
           />
 
@@ -70,14 +114,14 @@ export function TimeBlockUnit(props: TimeBlockUnitProps) {
             className="top-drag"
             onMouseDown={(evt) => {
               evt.stopPropagation();
-              props.onStartDrag(props.block.id, "top", evt.clientY);
+              onStartDrag(block.id, "top", evt.clientY);
             }}
           />
           <div
             className="bottom-drag"
             onMouseDown={(evt) => {
               evt.stopPropagation();
-              props.onStartDrag(props.block.id, "bottom", evt.clientY);
+              onStartDrag(block.id, "bottom", evt.clientY);
             }}
           />
         </>
@@ -85,17 +129,11 @@ export function TimeBlockUnit(props: TimeBlockUnitProps) {
 
       <div className="header-buttons">
         <Button icon="edit" minimal onClick={() => setIsEdit(true)} />
-        <Button
-          icon="delete"
-          minimal
-          onClick={() => props.onDelete(props.block.id)}
-        />
+        <Button icon="delete" minimal onClick={() => onDelete(block.id)} />
         <Button
           text={isScheduled ? "u" : "s"}
           onClick={() =>
-            isScheduled
-              ? props.onUnschedule(props.block.id)
-              : props.onSchedule(props.block.id)
+            isScheduled ? onUnschedule(block.id) : onSchedule(block.id)
           }
         />
       </div>
@@ -119,7 +157,7 @@ export function TimeBlockUnit(props: TimeBlockUnitProps) {
           />
         </div>
       ) : (
-        <div>{props.block.description}</div>
+        <div>{block.description}</div>
       )}
     </div>
   );
