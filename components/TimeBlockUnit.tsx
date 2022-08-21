@@ -1,7 +1,9 @@
-import { Button, InputGroup } from "@blueprintjs/core";
+import { Button, InputGroup, Overlay } from "@blueprintjs/core";
+import { Popover2 } from "@blueprintjs/popover2";
 import { CSSProperties, useContext, useEffect, useState } from "react";
 import { TaskColorContext } from "./ColorSansHandler";
 import { DragLoc, TimeBlockEntry } from "./TimeBlockDay";
+import { TimeBlockDetails } from "./TimeBlockDetails";
 
 interface TimeBlockUnitProps {
   onStartDrag?: (id: string, location: DragLoc, clientY: number) => void;
@@ -66,9 +68,21 @@ export function TimeBlockUnit(props: TimeBlockUnitProps) {
 
   const [isMouseInside, setIsMouseInside] = useState(false);
 
+  // track isDetailsOpen via state
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+
   useEffect(() => {
     // bind a key press handler to the document to detect key press without focus
     function handleKeyDown(e: KeyboardEvent) {
+      // check if target is an input or textarea
+      const isTargetInput =
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement;
+
+      if (isTargetInput) {
+        return;
+      }
+
       if (isMouseInside) {
         const possibleNum = +e.key;
 
@@ -77,7 +91,16 @@ export function TimeBlockUnit(props: TimeBlockUnitProps) {
             ...block,
             priority: possibleNum,
           });
+
+          return;
         }
+
+        if (e.key === "d") {
+          setIsDetailsOpen(!isDetailsOpen);
+          return;
+        }
+
+        console.log("unhandled key press", e.key);
       }
     }
 
@@ -86,7 +109,7 @@ export function TimeBlockUnit(props: TimeBlockUnitProps) {
     return function cleanup() {
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [isMouseInside, onChange, block]);
+  }, [isMouseInside, onChange, block, isDetailsOpen]);
 
   return (
     <div
@@ -136,6 +159,18 @@ export function TimeBlockUnit(props: TimeBlockUnitProps) {
             isScheduled ? onUnschedule(block.id) : onSchedule(block.id)
           }
         />
+
+        <Popover2
+          isOpen={isDetailsOpen}
+          onClose={() => setIsDetailsOpen(false)}
+          content={<TimeBlockDetails block={block} onChange={onChange} />}
+        >
+          <Button
+            icon="chevron-down"
+            minimal
+            onClick={() => setIsDetailsOpen(true)}
+          />
+        </Popover2>
       </div>
       {isEdit ? (
         <div>

@@ -1,5 +1,9 @@
 # Time Block changelog
 
+## 0.0.7 -- 2022-08-20 23:05:58
+
+- Add a popup to quickly edit details - uses a set of buttons for duration and priority
+
 ## 0.0.6 -- 2022-08-20 13:35:24
 
 - Add color for priority and a setting to color by priority

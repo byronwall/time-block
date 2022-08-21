@@ -47,9 +47,9 @@ export function TimeBlockDay(props: TimeBlockDayProps) {
   const scheduledTasks = timeBlocks.filter(
     (block) => block.start !== undefined
   );
-  const unscheduledTasks = timeBlocks.filter(
-    (block) => block.start === undefined
-  );
+  const unscheduledTasks = timeBlocks
+    .filter((block) => block.start === undefined)
+    .sort((a, b) => a.priority - b.priority);
 
   // use a ref to track div
 
