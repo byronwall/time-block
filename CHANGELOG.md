@@ -1,5 +1,14 @@
 # Time Block changelog
 
+## 0.0.8 -- 2022-08-21 22:42:50
+
+- Move all action buttons to keyboard shortcuts
+- Change styling so that text does not overflow the down arrow
+- Allow the unscheduled tasks to wrap at the top
+- Slight tweaks to visuals
+- Force text color to give good contrast against background
+- Track a dirty status on the list and then show the `save all` button
+
 ## 0.0.7 -- 2022-08-20 23:05:58
 
 - Add a popup to quickly edit details - uses a set of buttons for duration and priority

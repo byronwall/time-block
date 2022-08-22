@@ -45,7 +45,7 @@ a {
   height: 100%;
   background-color: transparent;
   pointer-events: all;
-  width: 100%;
+  width: calc(100% - 26px);
   cursor: move;
 
   opacity: 0.2;

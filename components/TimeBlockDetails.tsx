@@ -1,7 +1,7 @@
-import { Button, EditableText } from "@blueprintjs/core";
+import { Button, Card, EditableText } from "@blueprintjs/core";
 import { useContext, useState } from "react";
-import { useSetState } from "react-use";
-import { TaskColorContext } from "./ColorSansHandler";
+
+import { TaskColorContext } from "./TaskColorContext";
 import { TimeBlockEntry } from "./TimeBlockDay";
 
 interface TimeBlockDetailsProps {
@@ -24,16 +24,16 @@ export function TimeBlockDetails(props: TimeBlockDetailsProps) {
   };
 
   // des block copy
-  const { description, duration, id, priority, start } = block;
+  const { description, start } = block;
 
   // use the color context
   const { getColorFromPriority } = useContext(TaskColorContext);
 
-  const durationsCommon = [15, 30, 45, 60, 90, 120, 180, 240];
+  const durationsCommon = [15, 30, 45, 60, 90, 120, 180];
   return (
-    <div
+    <Card
       style={{
-        height: 200,
+        height: 250,
         width: 200,
       }}
     >
@@ -79,6 +79,6 @@ export function TimeBlockDetails(props: TimeBlockDetailsProps) {
           ))}
         </div>
       </div>
-    </div>
+    </Card>
   );
 }

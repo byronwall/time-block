@@ -259,23 +259,26 @@ export function TimeBlockDay(props: TimeBlockDayProps) {
               }
             }}
             rightElement={<Button onClick={handleCreateTaskClick} text="add" />}
+            style={{ width: 400 }}
           />
         </FormGroup>
       </div>
 
       <div>
         <h3>unscheduled</h3>
-        {unscheduledTasks.map((block) => (
-          <TimeBlockUnit
-            {...TimeBlockCommon}
-            key={block.id}
-            block={block}
-            onSchedule={handleBlockSchedule}
-          />
-        ))}
+        <div style={{ display: "flex", flexWrap: "wrap" }}>
+          {unscheduledTasks.map((block) => (
+            <TimeBlockUnit
+              {...TimeBlockCommon}
+              key={block.id}
+              block={block}
+              onSchedule={handleBlockSchedule}
+            />
+          ))}
+        </div>
       </div>
 
-      <div style={{ display: "flex" }}>
+      <div style={{ display: "flex", marginTop: 20 }}>
         <div style={{ position: "relative", width: 100 }}>
           {hours.map((hour, idx) => (
             <div

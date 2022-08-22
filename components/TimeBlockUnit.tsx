@@ -1,7 +1,8 @@
 import { Button, InputGroup, Overlay } from "@blueprintjs/core";
 import { Popover2 } from "@blueprintjs/popover2";
 import { CSSProperties, useContext, useEffect, useState } from "react";
-import { TaskColorContext } from "./ColorSansHandler";
+import { getTextColor } from "./helpers";
+import { TaskColorContext } from "./TaskColorContext";
 import { DragLoc, TimeBlockEntry } from "./TimeBlockDay";
 import { TimeBlockDetails } from "./TimeBlockDetails";
 
@@ -66,6 +67,8 @@ export function TimeBlockUnit(props: TimeBlockUnitProps) {
     ? colorContext.getColorFromPriority(block.priority ?? 5)
     : "#C0DFF7";
 
+  const textColor = getTextColor(backgroundColor);
+
   const [isMouseInside, setIsMouseInside] = useState(false);
 
   // track isDetailsOpen via state
@@ -97,6 +100,30 @@ export function TimeBlockUnit(props: TimeBlockUnitProps) {
 
         if (e.key === "d") {
           setIsDetailsOpen(!isDetailsOpen);
+          e.preventDefault();
+          e.stopPropagation();
+          return;
+        }
+
+        if (e.key === "e") {
+          setIsEdit(!isEdit);
+          e.preventDefault();
+          e.stopPropagation();
+          return;
+        }
+
+        if (e.key === "x") {
+          onDelete(block.id);
+          e.preventDefault();
+          e.stopPropagation();
+          return;
+        }
+
+        if (e.key === "s") {
+          isScheduled ? onUnschedule(block.id) : onSchedule(block.id);
+
+          e.preventDefault();
+          e.stopPropagation();
           return;
         }
 
@@ -109,7 +136,17 @@ export function TimeBlockUnit(props: TimeBlockUnitProps) {
     return function cleanup() {
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [isMouseInside, onChange, block, isDetailsOpen]);
+  }, [
+    isMouseInside,
+    onChange,
+    block,
+    isDetailsOpen,
+    isEdit,
+    onDelete,
+    onSchedule,
+    onUnschedule,
+    isScheduled,
+  ]);
 
   return (
     <div
@@ -119,6 +156,8 @@ export function TimeBlockUnit(props: TimeBlockUnitProps) {
         width: 200,
         border: "1px solid black",
         backgroundColor,
+        color: textColor,
+        padding: 3,
       }}
       onMouseEnter={() => setIsMouseInside(true)}
       onMouseLeave={() => setIsMouseInside(false)}
@@ -150,50 +189,46 @@ export function TimeBlockUnit(props: TimeBlockUnitProps) {
         </>
       )}
 
-      <div className="header-buttons">
-        <Button icon="edit" minimal onClick={() => setIsEdit(true)} />
-        <Button icon="delete" minimal onClick={() => onDelete(block.id)} />
-        <Button
-          text={isScheduled ? "u" : "s"}
-          onClick={() =>
-            isScheduled ? onUnschedule(block.id) : onSchedule(block.id)
-          }
-        />
-
-        <Popover2
-          isOpen={isDetailsOpen}
-          onClose={() => setIsDetailsOpen(false)}
-          content={<TimeBlockDetails block={block} onChange={onChange} />}
-        >
-          <Button
-            icon="chevron-down"
-            minimal
-            onClick={() => setIsDetailsOpen(true)}
-          />
-        </Popover2>
-      </div>
-      {isEdit ? (
+      <div style={{ display: "flex" }}>
         <div>
-          <InputGroup
-            value={editText}
-            onChange={(evt) => setEditText(evt.target.value)}
-            onKeyDown={(evt) => {
-              if (evt.key === "Enter") {
-                acceptEditText();
-              }
-              if (evt.key === "Escape") {
-                setIsEdit(false);
-              }
-            }}
-            autoFocus
-            rightElement={
-              <Button minimal icon="tick" onClick={acceptEditText} />
-            }
-          />
+          {isEdit ? (
+            <div>
+              <InputGroup
+                value={editText}
+                onChange={(evt) => setEditText(evt.target.value)}
+                onKeyDown={(evt) => {
+                  if (evt.key === "Enter") {
+                    acceptEditText();
+                  }
+                  if (evt.key === "Escape") {
+                    setIsEdit(false);
+                  }
+                }}
+                autoFocus
+                rightElement={
+                  <Button minimal icon="tick" onClick={acceptEditText} />
+                }
+              />
+            </div>
+          ) : (
+            <div>{block.description}</div>
+          )}
         </div>
-      ) : (
-        <div>{block.description}</div>
-      )}
+        <div>
+          <Popover2
+            isOpen={isDetailsOpen}
+            onClose={() => setIsDetailsOpen(false)}
+            content={<TimeBlockDetails block={block} onChange={onChange} />}
+            position="right"
+          >
+            <Button
+              icon="chevron-down"
+              minimal
+              onClick={() => setIsDetailsOpen(true)}
+            />
+          </Popover2>
+        </div>
+      </div>
     </div>
   );
 }
