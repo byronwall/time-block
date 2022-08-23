@@ -1,5 +1,12 @@
 # Time Block changelog
 
+## 0.0.9 -- 2022-08-22 22:07:24
+
+- Do a default color in the schedule
+- Resolve time issue UTC vs. local
+- Allow the completion status to change the color
+- Add support for frozen tasks which cannot move automatically - dashed border + `f`
+
 ## 0.0.8 -- 2022-08-21 22:42:50
 
 - Move all action buttons to keyboard shortcuts

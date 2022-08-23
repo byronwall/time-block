@@ -1,5 +1,6 @@
-import { Button, Card, EditableText } from "@blueprintjs/core";
+import { Button, Card, EditableText, Switch } from "@blueprintjs/core";
 import { useContext, useState } from "react";
+import { handleBooleanChange } from "./helpers";
 
 import { TaskColorContext } from "./TaskColorContext";
 import { TimeBlockEntry } from "./TimeBlockDay";
@@ -77,6 +78,28 @@ export function TimeBlockDetails(props: TimeBlockDetailsProps) {
               }}
             />
           ))}
+        </div>
+
+        {/* add a switch to track complete */}
+        <div>
+          <Switch
+            label="Complete"
+            checked={block.isComplete}
+            onChange={handleBooleanChange((isComplete) =>
+              handleChange({ isComplete })
+            )}
+          />
+        </div>
+
+        {/* add a switch to track isFrozen */}
+        <div>
+          <Switch
+            label="Frozen"
+            checked={block.isFrozen}
+            onChange={handleBooleanChange((isFrozen) =>
+              handleChange({ isFrozen })
+            )}
+          />
         </div>
       </div>
     </Card>

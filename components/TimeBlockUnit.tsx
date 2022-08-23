@@ -18,6 +18,8 @@ interface TimeBlockUnitProps {
   block: TimeBlockEntry;
 
   column?: number;
+
+  shouldColorDefault?: boolean;
 }
 
 export function TimeBlockUnit(props: TimeBlockUnitProps) {
@@ -30,6 +32,7 @@ export function TimeBlockUnit(props: TimeBlockUnitProps) {
     block,
     hourScale,
     column,
+    shouldColorDefault,
   } = props;
 
   const zeroPx = hourScale?.(0) ?? 0;
@@ -63,9 +66,14 @@ export function TimeBlockUnit(props: TimeBlockUnitProps) {
 
   const colorContext = useContext(TaskColorContext);
 
-  const backgroundColor = colorContext.isColoredByPriority
-    ? colorContext.getColorFromPriority(block.priority ?? 5)
-    : "#C0DFF7";
+  const backgroundColor =
+    shouldColorDefault || !colorContext.isColoredByPriority
+      ? block.isComplete
+        ? "#f5f5f5"
+        : "#C0DFF7"
+      : colorContext.getColorFromPriority(block.priority ?? 5);
+
+  const borderStyle = block.isFrozen ? "dashed" : "solid";
 
   const textColor = getTextColor(backgroundColor);
 
@@ -127,6 +135,24 @@ export function TimeBlockUnit(props: TimeBlockUnitProps) {
           return;
         }
 
+        if (e.key === "c") {
+          // complete the task
+          onChange(block.id, { ...block, isComplete: !block.isComplete });
+
+          e.preventDefault();
+          e.stopPropagation();
+          return;
+        }
+
+        if (e.key === "f") {
+          // freeze the task
+          onChange(block.id, { ...block, isFrozen: !block.isFrozen });
+
+          e.preventDefault();
+          e.stopPropagation();
+          return;
+        }
+
         console.log("unhandled key press", e.key);
       }
     }
@@ -155,6 +181,7 @@ export function TimeBlockUnit(props: TimeBlockUnitProps) {
         height: height,
         width: 200,
         border: "1px solid black",
+        borderStyle,
         backgroundColor,
         color: textColor,
         padding: 3,

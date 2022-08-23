@@ -1,5 +1,5 @@
 import { Button, FormGroup, InputGroup } from "@blueprintjs/core";
-import { scaleTime, timeFormat, timeHour, timeMinute, timeParse } from "d3";
+import { scaleTime, timeHour, timeMinute, utcFormat, utcParse } from "d3";
 import React, { useRef, useState } from "react";
 
 import { createUuid } from "../util/helpers";
@@ -21,6 +21,9 @@ export interface TimeBlockEntry {
   description: string;
   id: string;
   priority?: number;
+
+  isComplete?: boolean;
+  isFrozen?: boolean;
 }
 
 export type DragLoc = "top" | "bottom" | "all";
@@ -57,7 +60,7 @@ export function TimeBlockDay(props: TimeBlockDayProps) {
 
   const maxHeight = 600;
 
-  const parser = timeParse("%H:%M");
+  const parser = utcParse("%H:%M");
 
   const start = parser(props.start);
   const end = parser(props.end);
@@ -66,7 +69,7 @@ export function TimeBlockDay(props: TimeBlockDayProps) {
 
   const hours = hourScale.ticks(timeHour);
 
-  const formatter = timeFormat("%H:%M");
+  const formatter = utcFormat("%H:%M");
 
   // const tracked number of items in each slot
   const sortedBlocks = [...scheduledTasks];
@@ -313,6 +316,7 @@ export function TimeBlockDay(props: TimeBlockDayProps) {
               column={colHash[block.id]}
               onStartDrag={handleStartDrag}
               onUnschedule={handleBlockUnschedule}
+              shouldColorDefault
             />
           ))}
         </div>

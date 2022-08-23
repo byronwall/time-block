@@ -8,7 +8,8 @@ import {
 } from "@blueprintjs/core";
 import { TimePicker } from "@blueprintjs/datetime";
 import { Popover2 } from "@blueprintjs/popover2";
-import { scaleOrdinal, timeFormat, timeParse } from "d3";
+import { scaleOrdinal, utcFormat, utcParse } from "d3";
+import { isEqual } from "lodash-es";
 import { useCallback, useEffect, useState } from "react";
 
 import { handleBooleanChange } from "../../components/helpers";
@@ -20,8 +21,6 @@ import { TaskList } from "../../components/TaskListSelector";
 import { TimeBlockDay, TimeBlockEntry } from "../../components/TimeBlockDay";
 import { findOneTaskList } from "../../util/db";
 import { quickPost } from "../../util/quickPost";
-
-import { isEqual } from "lodash-es";
 
 interface TimeBlockViewProps {
   activeTaskList: TaskList;
@@ -80,7 +79,7 @@ export default function TimeBlockView(props: TimeBlockViewProps) {
         return;
       }
 
-      if (e.key === "c") {
+      if (e.key === "C") {
         onChange({ isColoredByPriority: !colorContext.isColoredByPriority });
         return;
       }
@@ -96,8 +95,8 @@ export default function TimeBlockView(props: TimeBlockViewProps) {
   }, [onChange, colorContext.isColoredByPriority]);
 
   // store a string for start time in state
-  const parser = timeParse("%H:%M");
-  const dateToStr = timeFormat("%H:%M");
+  const parser = utcParse("%H:%M");
+  const dateToStr = utcFormat("%H:%M");
 
   const [startTime, setStartTime] = useState(parser("08:00"));
   const [endTime, setEndTime] = useState(parser("18:00"));

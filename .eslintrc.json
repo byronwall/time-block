@@ -2,6 +2,7 @@
   "extends": "next/core-web-vitals",
   "rules": {
     "react/destructuring-assignment": 1,
-    "react/self-closing-comp": 1
+    "react/self-closing-comp": 1,
+    "no-console": 1
   }
 }
