@@ -67,6 +67,13 @@ export default function TimeBlockView(props: TimeBlockViewProps) {
     setActiveTaskList(newTaskList);
   };
 
+  // store a string for start time in state
+  const parser = utcParse("%H:%M");
+  const dateToStr = utcFormat("%H:%M");
+
+  const [startTime, setStartTime] = useState(parser("08:00"));
+  const [endTime, setEndTime] = useState(parser("18:00"));
+
   useEffect(() => {
     // bind a key press handler to the document to detect key press without focus
     function handleKeyDown(e: KeyboardEvent) {
@@ -84,6 +91,16 @@ export default function TimeBlockView(props: TimeBlockViewProps) {
         return;
       }
 
+      if (e.key === "R") {
+        // update tasks after call to rebalance
+        const newEntries = getTImeBlocksWithoutOverlap(
+          activeTaskList.timeBlockEntries,
+          +startTime
+        );
+
+        setActiveTaskList({ ...activeTaskList, timeBlockEntries: newEntries });
+      }
+
       console.log("unhandled key press", e.key);
     }
 
@@ -92,14 +109,7 @@ export default function TimeBlockView(props: TimeBlockViewProps) {
     return function cleanup() {
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [onChange, colorContext.isColoredByPriority]);
-
-  // store a string for start time in state
-  const parser = utcParse("%H:%M");
-  const dateToStr = utcFormat("%H:%M");
-
-  const [startTime, setStartTime] = useState(parser("08:00"));
-  const [endTime, setEndTime] = useState(parser("18:00"));
+  }, [onChange, colorContext.isColoredByPriority, activeTaskList, startTime]);
 
   return (
     <>
@@ -171,4 +181,52 @@ export async function getServerSideProps(context): Promise<{
       activeTaskList,
     },
   };
+}
+
+// function that modifies an array of time blocks to occur end to end without overlap
+function getTImeBlocksWithoutOverlap(
+  timeBlocks: TimeBlockEntry[],
+  forcedStart?: number
+) {
+  const newTimeBlocks = [...timeBlocks];
+
+  const goodBlocks = newTimeBlocks
+    .filter((c) => c.start !== undefined)
+    .filter((c) => !c.isFrozen)
+    .sort((a, b) => a.start - b.start);
+
+  const frozenBlocks = newTimeBlocks.filter(
+    (c) => c.isFrozen && c.start !== undefined
+  );
+
+  goodBlocks.forEach((block, idx) => {
+    if (idx === 0) {
+      if (forcedStart !== undefined) {
+        block.start = forcedStart;
+      }
+      return;
+    }
+    let prevBlock = goodBlocks[idx - 1];
+
+    const possibleStart = prevBlock.start + prevBlock.duration * 1000;
+    const possibleEnd = possibleStart + block.duration * 1000;
+
+    // check if start or end time is in a frozen block
+    const frozenConflicts = frozenBlocks.filter((c) => {
+      const isBefore = possibleEnd <= c.start;
+      const isAfter = possibleStart >= c.start + c.duration * 1000;
+
+      return !(isBefore || isAfter);
+    });
+
+    if (frozenConflicts.length > 0) {
+      prevBlock = frozenConflicts[0];
+    }
+
+    const actualStart = prevBlock.start + prevBlock.duration * 1000;
+
+    block.start = actualStart;
+  });
+
+  return newTimeBlocks;
 }

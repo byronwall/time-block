@@ -250,7 +250,7 @@ export function TimeBlockDay(props: TimeBlockDayProps) {
   };
 
   return (
-    <div>
+    <div style={{ marginBottom: 100 }}>
       <div style={{ margin: 30 }}>
         <FormGroup inline>
           <InputGroup

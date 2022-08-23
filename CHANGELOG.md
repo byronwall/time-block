@@ -6,6 +6,8 @@
 - Resolve time issue UTC vs. local
 - Allow the completion status to change the color
 - Add support for frozen tasks which cannot move automatically - dashed border + `f`
+- Allow blocks to be auto scheduled to remove gaps - this will skip over frozen blocks - `shift + r`
+- Add an over-scroll margin
 
 ## 0.0.8 -- 2022-08-21 22:42:50
 
