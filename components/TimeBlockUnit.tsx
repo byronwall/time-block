@@ -37,7 +37,7 @@ export function TimeBlockUnit(props: TimeBlockUnitProps) {
   } = props;
 
   const zeroPx = hourScale?.(0) ?? 0;
-  const durationPx = hourScale?.(new Date(block.duration * 1000)) ?? 50;
+  const durationPx = hourScale?.(new Date(block.duration * 1000)) ?? 80;
 
   const height = Math.max(durationPx - zeroPx, 0);
 

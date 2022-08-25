@@ -1,5 +1,12 @@
 import { Button, FormGroup, InputGroup } from "@blueprintjs/core";
-import { scaleTime, timeHour, timeMinute, utcFormat, utcParse } from "d3";
+import {
+  scaleTime,
+  timeFormat,
+  timeHour,
+  timeMinute,
+  utcFormat,
+  utcParse,
+} from "d3";
 import React, { useRef, useState } from "react";
 import { TimeBlockEntry } from "../model/model";
 
@@ -60,6 +67,7 @@ export function TimeBlockDay(props: TimeBlockDayProps) {
   const hours = hourScale.ticks(timeHour);
 
   const formatter = utcFormat("%H:%M");
+  const localFormatter = timeFormat("%H:%M");
 
   // const tracked number of items in each slot
   const sortedBlocks = [...scheduledTasks];
@@ -240,6 +248,11 @@ export function TimeBlockDay(props: TimeBlockDayProps) {
     onDelete: handleBlockDelete,
   };
 
+  // this is messy - the start/end are UTC but we want to display local time
+  const nowFormatted = localFormatter(new Date());
+  const nowParsed = parser(nowFormatted);
+  const curTimeTop = hourScale(nowParsed);
+
   return (
     <div style={{ marginBottom: 100 }}>
       <div style={{ margin: 30 }}>
@@ -298,6 +311,16 @@ export function TimeBlockDay(props: TimeBlockDayProps) {
           onMouseMove={handleMouseMove}
           onMouseUp={() => setDragId("")}
         >
+          <div
+            style={{
+              height: 10,
+              width: "100%",
+              background: "#FF9A00",
+              position: "absolute",
+              top: curTimeTop,
+            }}
+          />
+
           {scheduledTasks.map((block) => (
             <TimeBlockUnit
               {...TimeBlockCommon}

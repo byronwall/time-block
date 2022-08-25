@@ -1,10 +1,11 @@
 # Time Block changelog
 
-## 0.0.10 -- 2022-08-24 22:18:14
+## 0.0.10 -- 2022-08-24 23:09:39
 
 - Have a default priority -- includes a new migration layer
 - Refactor some types into the models file
 - Allow the display start and end time to save with the task list
+- Show a bar for current time
 
 ## 0.0.9 -- 2022-08-22 22:07:24
 

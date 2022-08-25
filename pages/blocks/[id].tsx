@@ -7,17 +7,13 @@ import {
   InputGroup,
   Switch,
 } from "@blueprintjs/core";
-import { TimePicker } from "@blueprintjs/datetime";
 import { Popover2 } from "@blueprintjs/popover2";
 import { scaleOrdinal, utcFormat, utcParse } from "d3";
 import { isEqual } from "lodash-es";
 import { useCallback, useEffect, useState } from "react";
 import { useSetState } from "react-use";
 
-import {
-  handleBooleanChange,
-  handleStringChange,
-} from "../../components/helpers";
+import { handleBooleanChange } from "../../components/helpers";
 import {
   ColorSansHandler,
   TaskColorContext,
@@ -108,11 +104,13 @@ export default function TimeBlockView(props: TimeBlockViewProps) {
     return function cleanup() {
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [onChange, colorContext.isColoredByPriority, activeTaskList, startTime]);
-
-  // store a string for start time in state
-  const [startTimeStr, setStartTimeStr] = useState(dateToStr(startTime));
-  const [endTimeStr, setEndTimeStr] = useState(dateToStr(endTime));
+  }, [
+    onChange,
+    colorContext.isColoredByPriority,
+    activeTaskList,
+    startTime,
+    setActiveTaskList,
+  ]);
 
   return (
     <>
