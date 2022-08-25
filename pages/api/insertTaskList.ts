@@ -1,7 +1,6 @@
 // Next.js API route support: https://nextjs.org/docs/api-routes/introduction
 
-import { TaskList } from "../../components/TaskListSelector";
-import { Task } from "../../model/model";
+import { TaskList } from "../../model/model";
 import { insertTask } from "../../util/db";
 
 export default async function handler(req, res) {

@@ -2,7 +2,8 @@ import { Button, FormGroup, InputGroup } from "@blueprintjs/core";
 import Link from "next/link";
 import { useState } from "react";
 
-import { TaskList, TaskListSelector } from "../components/TaskListSelector";
+import { TaskListSelector } from "../components/TaskListSelector";
+import { TaskList } from "../model/model";
 import { findAll } from "../util/db";
 import { createUuid } from "../util/helpers";
 
@@ -14,11 +15,7 @@ interface TasksProps {
 export default function Tasks(props: TasksProps) {
   // store active task list in state
 
-  const defaultTaskList: TaskList = {
-    name: "default",
-    timeBlockEntries: [],
-    id: createUuid(),
-  };
+  const defaultTaskList = createDefaultTaskList();
 
   const [activeTaskList, setActiveTaskList] = useState(
     props.activeTaskList ?? defaultTaskList
@@ -41,11 +38,7 @@ export default function Tasks(props: TasksProps) {
       <Button
         text="create new list"
         onClick={() => {
-          setActiveTaskList({
-            id: createUuid(),
-            name: "new list",
-            timeBlockEntries: [],
-          });
+          setActiveTaskList(createDefaultTaskList());
         }}
       />
 
@@ -77,6 +70,16 @@ export default function Tasks(props: TasksProps) {
       <div style={{ marginBottom: 100 }} />
     </div>
   );
+}
+
+function createDefaultTaskList(): TaskList {
+  return {
+    name: "default",
+    timeBlockEntries: [],
+    id: createUuid(),
+    viewEnd: "17:00",
+    viewStart: "08:00",
+  };
 }
 
 export async function getServerSideProps(context): Promise<{

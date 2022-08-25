@@ -1,6 +1,7 @@
 import { Button, FormGroup, InputGroup } from "@blueprintjs/core";
 import { scaleTime, timeHour, timeMinute, utcFormat, utcParse } from "d3";
 import React, { useRef, useState } from "react";
+import { TimeBlockEntry } from "../model/model";
 
 import { createUuid } from "../util/helpers";
 import { TimeBlockUnit } from "./TimeBlockUnit";
@@ -13,17 +14,6 @@ interface TimeBlockDayProps {
   defaultEntries?: TimeBlockEntry[];
 
   onEntryChange(entries: TimeBlockEntry[]): void;
-}
-
-export interface TimeBlockEntry {
-  start?: number;
-  duration: number;
-  description: string;
-  id: string;
-  priority?: number;
-
-  isComplete?: boolean;
-  isFrozen?: boolean;
 }
 
 export type DragLoc = "top" | "bottom" | "all";
@@ -123,6 +113,7 @@ export function TimeBlockDay(props: TimeBlockDayProps) {
       description: newTaskText,
       duration: 60 * 60,
       start: newStartTime,
+      priority: 5,
     };
 
     setTimeBlocks([...timeBlocks, task]);

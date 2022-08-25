@@ -1,20 +1,13 @@
 import { Button, MenuItem } from "@blueprintjs/core";
 import { ItemPredicate, ItemRenderer, Select2 } from "@blueprintjs/select";
 import * as React from "react";
-
-import { TimeBlockEntry } from "./TimeBlockDay";
+import { TimeBlockEntry, TaskList } from "../model/model";
 
 interface TaskListSelectorProps {
   items: TaskList[];
 
   activeItem?: TaskList;
   onItemSelect: (item: TaskList) => void;
-}
-
-export interface TaskList {
-  id: string;
-  name: string;
-  timeBlockEntries: TimeBlockEntry[];
 }
 
 export function TaskListSelector(props: TaskListSelectorProps) {

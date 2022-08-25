@@ -4,6 +4,7 @@ import {
   EditableText,
   FormGroup,
   H2,
+  InputGroup,
   Switch,
 } from "@blueprintjs/core";
 import { TimePicker } from "@blueprintjs/datetime";
@@ -11,14 +12,18 @@ import { Popover2 } from "@blueprintjs/popover2";
 import { scaleOrdinal, utcFormat, utcParse } from "d3";
 import { isEqual } from "lodash-es";
 import { useCallback, useEffect, useState } from "react";
+import { useSetState } from "react-use";
 
-import { handleBooleanChange } from "../../components/helpers";
+import {
+  handleBooleanChange,
+  handleStringChange,
+} from "../../components/helpers";
 import {
   ColorSansHandler,
   TaskColorContext,
 } from "../../components/TaskColorContext";
-import { TaskList } from "../../components/TaskListSelector";
-import { TimeBlockDay, TimeBlockEntry } from "../../components/TimeBlockDay";
+import { TimeBlockDay } from "../../components/TimeBlockDay";
+import { TaskList, TimeBlockEntry } from "../../model/model";
 import { findOneTaskList } from "../../util/db";
 import { quickPost } from "../../util/quickPost";
 
@@ -28,7 +33,7 @@ interface TimeBlockViewProps {
 
 export default function TimeBlockView(props: TimeBlockViewProps) {
   // store the active list in state too
-  const [activeTaskList, setActiveTaskList] = useState(props.activeTaskList);
+  const [activeTaskList, setActiveTaskList] = useSetState(props.activeTaskList);
 
   const isDirty = !isEqual(activeTaskList, props.activeTaskList);
 
@@ -54,25 +59,19 @@ export default function TimeBlockView(props: TimeBlockViewProps) {
   };
 
   const handleNewTaskList = (entries: TimeBlockEntry[]) => {
-    const newTaskList = { ...activeTaskList };
-    newTaskList.timeBlockEntries = entries;
-
-    setActiveTaskList(newTaskList);
+    setActiveTaskList({ timeBlockEntries: entries });
   };
 
   const handleTaskListNameChange = (name: string) => {
-    const newTaskList = { ...activeTaskList };
-    newTaskList.name = name;
-
-    setActiveTaskList(newTaskList);
+    setActiveTaskList({ name });
   };
 
   // store a string for start time in state
   const parser = utcParse("%H:%M");
   const dateToStr = utcFormat("%H:%M");
 
-  const [startTime, setStartTime] = useState(parser("08:00"));
-  const [endTime, setEndTime] = useState(parser("18:00"));
+  const startTime = parser(activeTaskList.viewStart);
+  const endTime = parser(activeTaskList.viewEnd);
 
   useEffect(() => {
     // bind a key press handler to the document to detect key press without focus
@@ -98,7 +97,7 @@ export default function TimeBlockView(props: TimeBlockViewProps) {
           +startTime
         );
 
-        setActiveTaskList({ ...activeTaskList, timeBlockEntries: newEntries });
+        setActiveTaskList({ timeBlockEntries: newEntries });
       }
 
       console.log("unhandled key press", e.key);
@@ -110,6 +109,10 @@ export default function TimeBlockView(props: TimeBlockViewProps) {
       document.removeEventListener("keydown", handleKeyDown);
     };
   }, [onChange, colorContext.isColoredByPriority, activeTaskList, startTime]);
+
+  // store a string for start time in state
+  const [startTimeStr, setStartTimeStr] = useState(dateToStr(startTime));
+  const [endTimeStr, setEndTimeStr] = useState(dateToStr(endTime));
 
   return (
     <>
@@ -135,18 +138,21 @@ export default function TimeBlockView(props: TimeBlockViewProps) {
 
             <div style={{ display: "flex", gap: 10 }}>
               <FormGroup inline label="start time">
-                <TimePicker
-                  value={startTime}
-                  onChange={setStartTime}
-                  showArrowButtons
+                <InputGroup
+                  defaultValue={dateToStr(startTime)}
+                  onBlur={(e) => {
+                    setActiveTaskList({ viewStart: e.target.value });
+                  }}
                 />
               </FormGroup>
-
+            </div>
+            <div>
               <FormGroup inline label="end time">
-                <TimePicker
-                  value={endTime}
-                  onChange={setEndTime}
-                  showArrowButtons
+                <InputGroup
+                  defaultValue={dateToStr(endTime)}
+                  onBlur={(e) => {
+                    setActiveTaskList({ viewEnd: e.target.value });
+                  }}
                 />
               </FormGroup>
             </div>

@@ -1,11 +1,19 @@
-export interface Task {
-  id: string;
-  description: string;
-  
+export interface TimeBlockEntry {
+  start?: number;
   duration: number;
-  start: number;
-  end: number;
-  
-  completed: boolean;
-  priority: number
+  description: string;
+  id: string;
+  priority: number;
+
+  isComplete?: boolean;
+  isFrozen?: boolean;
+}
+
+export interface TaskList {
+  id: string;
+  name: string;
+  timeBlockEntries: TimeBlockEntry[];
+
+  viewStart: string;
+  viewEnd: string;
 }

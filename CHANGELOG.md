@@ -1,5 +1,11 @@
 # Time Block changelog
 
+## 0.0.10 -- 2022-08-24 22:18:14
+
+- Have a default priority -- includes a new migration layer
+- Refactor some types into the models file
+- Allow the display start and end time to save with the task list
+
 ## 0.0.9 -- 2022-08-22 22:07:24
 
 - Do a default color in the schedule

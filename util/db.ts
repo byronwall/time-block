@@ -1,6 +1,5 @@
 import Redis from "ioredis";
-import { TaskList } from "../components/TaskListSelector";
-import { Task } from "../model/model";
+import { TaskList } from "../model/model";
 
 const { REDIS_URL = "" } = process.env;
 // delete process.env.REDIS_URL;
@@ -38,7 +37,26 @@ export async function findOneTaskList(id: string) {
 
   const taskList = JSON.parse(reply) as TaskList;
 
+  // data migration steps
+  migrateTaskListData(taskList);
+
   return taskList;
+}
+
+function migrateTaskListData(taskList: TaskList) {
+  taskList.timeBlockEntries.forEach((entry) => {
+    if (entry.priority === undefined) {
+      entry.priority = 5;
+    }
+  });
+
+  if (taskList.viewStart === undefined) {
+    taskList.viewStart = "08:00";
+  }
+
+  if (taskList.viewEnd === undefined) {
+    taskList.viewEnd = "17:00";
+  }
 }
 
 export async function insertTask(data: TaskList) {

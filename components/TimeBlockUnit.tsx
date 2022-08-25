@@ -1,9 +1,10 @@
 import { Button, InputGroup, Overlay } from "@blueprintjs/core";
 import { Popover2 } from "@blueprintjs/popover2";
 import { CSSProperties, useContext, useEffect, useState } from "react";
+import { TimeBlockEntry } from "../model/model";
 import { getTextColor } from "./helpers";
 import { TaskColorContext } from "./TaskColorContext";
-import { DragLoc, TimeBlockEntry } from "./TimeBlockDay";
+import { DragLoc } from "./TimeBlockDay";
 import { TimeBlockDetails } from "./TimeBlockDetails";
 
 interface TimeBlockUnitProps {
