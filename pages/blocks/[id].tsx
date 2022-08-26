@@ -4,13 +4,15 @@ import {
   EditableText,
   FormGroup,
   H2,
+  HotkeyConfig,
   InputGroup,
   Switch,
+  useHotkeys,
 } from "@blueprintjs/core";
 import { Popover2 } from "@blueprintjs/popover2";
 import { scaleOrdinal, utcFormat, utcParse } from "d3";
 import { isEqual } from "lodash-es";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSetState } from "react-use";
 
 import { handleBooleanChange } from "../../components/helpers";
@@ -69,48 +71,44 @@ export default function TimeBlockView(props: TimeBlockViewProps) {
   const startTime = parser(activeTaskList.viewStart);
   const endTime = parser(activeTaskList.viewEnd);
 
-  useEffect(() => {
-    // bind a key press handler to the document to detect key press without focus
-    function handleKeyDown(e: KeyboardEvent) {
-      // check if target is an input or textarea
-      const isTargetInput =
-        e.target instanceof HTMLInputElement ||
-        e.target instanceof HTMLTextAreaElement;
+  const hotkeys = useMemo<HotkeyConfig[]>(
+    () => [
+      {
+        combo: "shift+r",
+        label: "rebalance",
+        global: true,
+        group: "time block view",
 
-      if (isTargetInput) {
-        return;
-      }
+        onKeyDown: () => {
+          const newEntries = getTImeBlocksWithoutOverlap(
+            activeTaskList.timeBlockEntries,
+            +startTime
+          );
 
-      if (e.key === "C") {
-        onChange({ isColoredByPriority: !colorContext.isColoredByPriority });
-        return;
-      }
+          setActiveTaskList({ timeBlockEntries: newEntries });
+        },
+      },
+      {
+        combo: "shift+c",
+        label: "color by priority",
+        global: true,
+        group: "time block view",
 
-      if (e.key === "R") {
-        // update tasks after call to rebalance
-        const newEntries = getTImeBlocksWithoutOverlap(
-          activeTaskList.timeBlockEntries,
-          +startTime
-        );
+        onKeyDown: () => {
+          onChange({ isColoredByPriority: !colorContext.isColoredByPriority });
+        },
+      },
+    ],
+    [
+      activeTaskList.timeBlockEntries,
+      startTime,
+      setActiveTaskList,
+      colorContext.isColoredByPriority,
+      onChange,
+    ]
+  );
 
-        setActiveTaskList({ timeBlockEntries: newEntries });
-      }
-
-      console.log("unhandled key press", e.key);
-    }
-
-    document.addEventListener("keydown", handleKeyDown);
-
-    return function cleanup() {
-      document.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [
-    onChange,
-    colorContext.isColoredByPriority,
-    activeTaskList,
-    startTime,
-    setActiveTaskList,
-  ]);
+  useHotkeys(hotkeys);
 
   return (
     <>

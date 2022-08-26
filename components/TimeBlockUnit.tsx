@@ -1,6 +1,20 @@
-import { Button, InputGroup, Overlay } from "@blueprintjs/core";
+import {
+  Button,
+  Hotkey,
+  HotkeyConfig,
+  InputGroup,
+  Overlay,
+  useHotkeys,
+} from "@blueprintjs/core";
 import { Popover2 } from "@blueprintjs/popover2";
-import { CSSProperties, useContext, useEffect, useState } from "react";
+import {
+  CSSProperties,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import { TimeBlockEntry } from "../model/model";
 import { getTextColor } from "./helpers";
 import { TaskColorContext } from "./TaskColorContext";
@@ -83,97 +97,126 @@ export function TimeBlockUnit(props: TimeBlockUnitProps) {
   // track isDetailsOpen via state
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
-  useEffect(() => {
-    // bind a key press handler to the document to detect key press without focus
-    function handleKeyDown(e: KeyboardEvent) {
-      // check if target is an input or textarea
-      const isTargetInput =
-        e.target instanceof HTMLInputElement ||
-        e.target instanceof HTMLTextAreaElement;
+  const onChangePartial = useCallback(
+    (newEntry: Partial<TimeBlockEntry>) => {
+      onChange(block.id, {
+        ...block,
+        ...newEntry,
+      });
+    },
+    [block, onChange]
+  );
 
-      if (isTargetInput) {
-        return;
-      }
+  // set up keyboard shortcuts
+  const hotkeys = useMemo<HotkeyConfig[]>(
+    () => [
+      {
+        combo: "d",
+        label: "details",
+        global: true,
+        group: "hover on block",
+        disabled: !isMouseInside,
+        onKeyDown: () => setIsDetailsOpen(!isDetailsOpen),
+      },
+      {
+        combo: "e",
+        label: "edit",
+        global: true,
+        group: "hover on block",
+        disabled: !isMouseInside,
+        onKeyDown: () => setIsEdit(!isEdit),
+      },
+      {
+        combo: "x",
+        label: "delete",
+        global: true,
+        group: "hover on block",
+        disabled: !isMouseInside,
+        onKeyDown: () => onDelete(block.id),
+      },
+      {
+        combo: "s",
+        label: "schedule",
+        global: true,
+        group: "hover on block",
+        disabled: !isMouseInside,
+        onKeyDown: () =>
+          isScheduled ? onUnschedule(block.id) : onSchedule(block.id),
+      },
+      {
+        combo: "1",
+        label: "set priority 1",
+        global: true,
+        group: "hover on block",
+        disabled: !isMouseInside,
+        onKeyDown: () => onChangePartial({ priority: 1 }),
+      },
+      {
+        combo: "2",
+        label: "set priority 2",
+        global: true,
+        group: "hover on block",
+        disabled: !isMouseInside,
+        onKeyDown: () => onChangePartial({ priority: 2 }),
+      },
+      {
+        combo: "3",
+        label: "set priority 3",
+        global: true,
+        group: "hover on block",
+        disabled: !isMouseInside,
+        onKeyDown: () => onChangePartial({ priority: 3 }),
+      },
 
-      if (isMouseInside) {
-        const possibleNum = +e.key;
+      {
+        combo: "4",
+        label: "set priority 4",
+        global: true,
+        group: "hover on block",
+        disabled: !isMouseInside,
+        onKeyDown: () => onChangePartial({ priority: 4 }),
+      },
+      {
+        combo: "5",
+        label: "set priority 5",
+        global: true,
+        group: "hover on block",
+        disabled: !isMouseInside,
+        onKeyDown: () => onChangePartial({ priority: 5 }),
+      },
+      {
+        combo: "c",
+        label: "complete",
+        global: true,
+        group: "hover on block",
+        disabled: !isMouseInside,
+        onKeyDown: () => onChangePartial({ isComplete: !block.isComplete }),
+      },
+      {
+        combo: "f",
+        label: "freeze",
+        global: true,
+        group: "hover on block",
+        disabled: !isMouseInside,
+        onKeyDown: () => onChangePartial({ isFrozen: !block.isFrozen }),
+      },
+    ],
+    [
+      isDetailsOpen,
+      isMouseInside,
+      isEdit,
+      block.id,
+      onDelete,
+      onSchedule,
+      onUnschedule,
+      isScheduled,
+      onChangePartial,
+      block.isComplete,
+      block.isFrozen,
+    ]
+  );
 
-        if (possibleNum >= 1 && possibleNum <= 5) {
-          onChange(block.id, {
-            ...block,
-            priority: possibleNum,
-          });
-
-          return;
-        }
-
-        if (e.key === "d") {
-          setIsDetailsOpen(!isDetailsOpen);
-          e.preventDefault();
-          e.stopPropagation();
-          return;
-        }
-
-        if (e.key === "e") {
-          setIsEdit(!isEdit);
-          e.preventDefault();
-          e.stopPropagation();
-          return;
-        }
-
-        if (e.key === "x") {
-          onDelete(block.id);
-          e.preventDefault();
-          e.stopPropagation();
-          return;
-        }
-
-        if (e.key === "s") {
-          isScheduled ? onUnschedule(block.id) : onSchedule(block.id);
-
-          e.preventDefault();
-          e.stopPropagation();
-          return;
-        }
-
-        if (e.key === "c") {
-          // complete the task
-          onChange(block.id, { ...block, isComplete: !block.isComplete });
-
-          e.preventDefault();
-          e.stopPropagation();
-          return;
-        }
-
-        if (e.key === "f") {
-          // freeze the task
-          onChange(block.id, { ...block, isFrozen: !block.isFrozen });
-
-          e.preventDefault();
-          e.stopPropagation();
-          return;
-        }
-
-        console.log("unhandled key press", e.key);
-      }
-    }
-
-    document.addEventListener("keydown", handleKeyDown);
-
-    return function cleanup() {
-      document.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [
-    isMouseInside,
-    onChange,
-    block,
-    isDetailsOpen,
-    isEdit,
-    onDelete,
-    onSchedule,
-    onUnschedule,
-    isScheduled,
-  ]);
+  useHotkeys(hotkeys);
 
   return (
     <div

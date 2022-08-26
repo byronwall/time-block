@@ -1,5 +1,9 @@
 # Time Block changelog
 
+## 0.0.11 -- 2022-08-25 22:26:06
+
+- Use Blueprint `useHotKey` which gives an overlay for free
+
 ## 0.0.10 -- 2022-08-24 23:09:39
 
 - Have a default priority -- includes a new migration layer
