@@ -112,8 +112,8 @@ export function TimeBlockDay(props: TimeBlockDayProps) {
     return maxEndTime;
   }
 
-  const handleCreateTaskClick = async () => {
-    const newStartTime = getFirstStartTime();
+  const handleCreateTaskClick = async (isScheduled = true) => {
+    const newStartTime = isScheduled ? getFirstStartTime() : undefined;
 
     // add new task to state
     const task: TimeBlockEntry = {
@@ -262,10 +262,9 @@ export function TimeBlockDay(props: TimeBlockDayProps) {
             onChange={(evt) => setNewTaskText(evt.target.value)}
             onKeyDown={(evt) => {
               if (evt.key === "Enter") {
-                handleCreateTaskClick();
+                handleCreateTaskClick(!evt.metaKey);
               }
             }}
-            rightElement={<Button onClick={handleCreateTaskClick} text="add" />}
             style={{ width: 400 }}
           />
         </FormGroup>

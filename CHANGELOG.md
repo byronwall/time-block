@@ -5,6 +5,7 @@
 - Use Blueprint `useHotKey` which gives an overlay for free
 - Prevent frozen or complete tasks from being auto scheduled
 - Force schedule to take place after current time
+- Allow new task to be unscheduled if holding meta key
 
 ## 0.0.10 -- 2022-08-24 23:09:39
 
