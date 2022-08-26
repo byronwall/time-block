@@ -3,6 +3,8 @@
 ## 0.0.11 -- 2022-08-25 22:26:06
 
 - Use Blueprint `useHotKey` which gives an overlay for free
+- Prevent frozen or complete tasks from being auto scheduled
+- Force schedule to take place after current time
 
 ## 0.0.10 -- 2022-08-24 23:09:39
 

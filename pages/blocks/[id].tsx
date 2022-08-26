@@ -10,7 +10,7 @@ import {
   useHotkeys,
 } from "@blueprintjs/core";
 import { Popover2 } from "@blueprintjs/popover2";
-import { scaleOrdinal, utcFormat, utcParse } from "d3";
+import { scaleOrdinal, timeFormat, timeParse, utcFormat, utcParse } from "d3";
 import { isEqual } from "lodash-es";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSetState } from "react-use";
@@ -66,10 +66,18 @@ export default function TimeBlockView(props: TimeBlockViewProps) {
 
   // store a string for start time in state
   const parser = utcParse("%H:%M");
+
   const dateToStr = utcFormat("%H:%M");
+  const dateToStrLocal = timeFormat("%H:%M");
 
   const startTime = parser(activeTaskList.viewStart);
   const endTime = parser(activeTaskList.viewEnd);
+
+  const nowInRightUnits = parser(dateToStrLocal(new Date()));
+
+  // store shouldScheduleAfterCurrent in state
+  const [shouldScheduleAfterCurrent, setShouldScheduleAfterCurrent] =
+    useState(true);
 
   const hotkeys = useMemo<HotkeyConfig[]>(
     () => [
@@ -80,9 +88,13 @@ export default function TimeBlockView(props: TimeBlockViewProps) {
         group: "time block view",
 
         onKeyDown: () => {
+          const schedStartTime = shouldScheduleAfterCurrent
+            ? +nowInRightUnits
+            : +startTime;
+
           const newEntries = getTImeBlocksWithoutOverlap(
             activeTaskList.timeBlockEntries,
-            +startTime
+            schedStartTime
           );
 
           setActiveTaskList({ timeBlockEntries: newEntries });
@@ -105,6 +117,8 @@ export default function TimeBlockView(props: TimeBlockViewProps) {
       setActiveTaskList,
       colorContext.isColoredByPriority,
       onChange,
+      nowInRightUnits,
+      shouldScheduleAfterCurrent,
     ]
   );
 
@@ -129,6 +143,13 @@ export default function TimeBlockView(props: TimeBlockViewProps) {
               checked={colorContext.isColoredByPriority}
               onChange={handleBooleanChange((isColoredByPriority) =>
                 onChange({ isColoredByPriority })
+              )}
+            />
+            <Switch
+              label="schedule after current"
+              checked={shouldScheduleAfterCurrent}
+              onChange={handleBooleanChange((shouldScheduleAfterCurrent) =>
+                setShouldScheduleAfterCurrent(shouldScheduleAfterCurrent)
               )}
             />
 
@@ -188,13 +209,13 @@ export async function getServerSideProps(context): Promise<{
 // function that modifies an array of time blocks to occur end to end without overlap
 function getTImeBlocksWithoutOverlap(
   timeBlocks: TimeBlockEntry[],
-  forcedStart?: number
+  forcedStart: number
 ) {
   const newTimeBlocks = [...timeBlocks];
 
   const goodBlocks = newTimeBlocks
     .filter((c) => c.start !== undefined)
-    .filter((c) => !c.isFrozen)
+
     .sort((a, b) => a.start - b.start);
 
   const frozenBlocks = newTimeBlocks.filter(
@@ -202,6 +223,11 @@ function getTImeBlocksWithoutOverlap(
   );
 
   goodBlocks.forEach((block, idx) => {
+    // skip movement on frozen blocks and complete
+    if (block.isFrozen || block.isComplete) {
+      return;
+    }
+
     if (idx === 0) {
       if (forcedStart !== undefined) {
         block.start = forcedStart;
@@ -210,7 +236,11 @@ function getTImeBlocksWithoutOverlap(
     }
     let prevBlock = goodBlocks[idx - 1];
 
-    const possibleStart = prevBlock.start + prevBlock.duration * 1000;
+    const possibleStart = Math.max(
+      forcedStart,
+      prevBlock.start + prevBlock.duration * 1000
+    );
+
     const possibleEnd = possibleStart + block.duration * 1000;
 
     // check if start or end time is in a frozen block
@@ -221,11 +251,10 @@ function getTImeBlocksWithoutOverlap(
       return !(isBefore || isAfter);
     });
 
-    if (frozenConflicts.length > 0) {
-      prevBlock = frozenConflicts[0];
-    }
-
-    const actualStart = prevBlock.start + prevBlock.duration * 1000;
+    const actualStart =
+      frozenConflicts.length > 0
+        ? frozenConflicts[0].start + frozenConflicts[0].duration * 1000
+        : possibleStart;
 
     block.start = actualStart;
   });
