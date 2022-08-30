@@ -7,7 +7,7 @@ import {
 } from "@blueprintjs/core";
 import { scaleOrdinal, timeFormat, utcFormat, utcParse } from "d3";
 import { isEqual } from "lodash-es";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useSetState } from "react-use";
 import { SearchContext } from "../../components/SearchContext";
 
@@ -21,6 +21,7 @@ import { TaskList, TimeBlockEntry } from "../../model/model";
 import { findOneTaskList } from "../../util/db";
 import { quickPost } from "../../util/quickPost";
 import { SearchOverlay } from "../../components/SearchOverlay";
+import { getTImeBlocksWithoutOverlap } from "../../components/helpers";
 
 interface TimeBlockViewProps {
   activeTaskList: TaskList;
@@ -196,60 +197,4 @@ export async function getServerSideProps(context): Promise<{
       activeTaskList,
     },
   };
-}
-
-// function that modifies an array of time blocks to occur end to end without overlap
-function getTImeBlocksWithoutOverlap(
-  timeBlocks: TimeBlockEntry[],
-  forcedStart: number
-) {
-  const newTimeBlocks = [...timeBlocks];
-
-  const goodBlocks = newTimeBlocks
-    .filter((c) => c.start !== undefined)
-
-    .sort((a, b) => a.start - b.start);
-
-  const frozenBlocks = newTimeBlocks.filter(
-    (c) => c.isFrozen && c.start !== undefined
-  );
-
-  goodBlocks.forEach((block, idx) => {
-    // skip movement on frozen blocks and complete
-    if (block.isFrozen || block.isComplete) {
-      return;
-    }
-
-    if (idx === 0) {
-      if (forcedStart !== undefined) {
-        block.start = forcedStart;
-      }
-      return;
-    }
-    let prevBlock = goodBlocks[idx - 1];
-
-    const possibleStart = Math.max(
-      forcedStart,
-      prevBlock.start + prevBlock.duration * 1000
-    );
-
-    const possibleEnd = possibleStart + block.duration * 1000;
-
-    // check if start or end time is in a frozen block
-    const frozenConflicts = frozenBlocks.filter((c) => {
-      const isBefore = possibleEnd <= c.start;
-      const isAfter = possibleStart >= c.start + c.duration * 1000;
-
-      return !(isBefore || isAfter);
-    });
-
-    const actualStart =
-      frozenConflicts.length > 0
-        ? frozenConflicts[0].start + frozenConflicts[0].duration * 1000
-        : possibleStart;
-
-    block.start = actualStart;
-  });
-
-  return newTimeBlocks;
 }
