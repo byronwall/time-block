@@ -1,6 +1,6 @@
 {
   "private": true,
-  "version": "0.0.11",
+  "version": "0.0.12",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -19,6 +19,7 @@
     "next": "12.1.4",
     "react": "18.0.0",
     "react-dom": "18.0.0",
+    "react-highlight-words": "^0.18.0",
     "react-use": "^17.4.0",
     "uuid": "^8.3.2"
   },

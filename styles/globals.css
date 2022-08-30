@@ -56,3 +56,8 @@ a {
   right: 0;
   top: 0;
 }
+
+.highlight {
+  background-color: #333;
+  color: #ffc619;
+}

@@ -1,21 +1,17 @@
 import {
   Button,
-  Card,
   EditableText,
-  FormGroup,
   H2,
   HotkeyConfig,
-  InputGroup,
-  Switch,
   useHotkeys,
 } from "@blueprintjs/core";
-import { Popover2 } from "@blueprintjs/popover2";
-import { scaleOrdinal, timeFormat, timeParse, utcFormat, utcParse } from "d3";
+import { scaleOrdinal, timeFormat, utcFormat, utcParse } from "d3";
 import { isEqual } from "lodash-es";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSetState } from "react-use";
+import { SearchContext } from "../../components/SearchContext";
 
-import { handleBooleanChange } from "../../components/helpers";
+import { SettingsPopover } from "../../components/SettingsPopover";
 import {
   ColorSansHandler,
   TaskColorContext,
@@ -24,6 +20,7 @@ import { TimeBlockDay } from "../../components/TimeBlockDay";
 import { TaskList, TimeBlockEntry } from "../../model/model";
 import { findOneTaskList } from "../../util/db";
 import { quickPost } from "../../util/quickPost";
+import { SearchOverlay } from "../../components/SearchOverlay";
 
 interface TimeBlockViewProps {
   activeTaskList: TaskList;
@@ -79,6 +76,13 @@ export default function TimeBlockView(props: TimeBlockViewProps) {
   const [shouldScheduleAfterCurrent, setShouldScheduleAfterCurrent] =
     useState(true);
 
+  const [searchContext, setSearchContext] = useSetState<
+    Omit<SearchContext, "onChange">
+  >({
+    isSearchOpen: false,
+    searchText: "",
+  });
+
   const hotkeys = useMemo<HotkeyConfig[]>(
     () => [
       {
@@ -110,6 +114,19 @@ export default function TimeBlockView(props: TimeBlockViewProps) {
           onChange({ isColoredByPriority: !colorContext.isColoredByPriority });
         },
       },
+      {
+        combo: "shift+s",
+        label: "show search",
+        global: true,
+        group: "global",
+
+        onKeyDown: (ev) => {
+          setSearchContext({ isSearchOpen: true });
+
+          // stop the S from going into the search box
+          ev.preventDefault();
+        },
+      },
     ],
     [
       activeTaskList.timeBlockEntries,
@@ -119,6 +136,7 @@ export default function TimeBlockView(props: TimeBlockViewProps) {
       onChange,
       nowInRightUnits,
       shouldScheduleAfterCurrent,
+      setSearchContext,
     ]
   );
 
@@ -135,59 +153,33 @@ export default function TimeBlockView(props: TimeBlockViewProps) {
 
       {isDirty && <Button text="save all" onClick={handleSaveTaskList} />}
 
-      <Popover2
-        content={
-          <Card>
-            <Switch
-              label="color by priority"
-              checked={colorContext.isColoredByPriority}
-              onChange={handleBooleanChange((isColoredByPriority) =>
-                onChange({ isColoredByPriority })
-              )}
-            />
-            <Switch
-              label="schedule after current"
-              checked={shouldScheduleAfterCurrent}
-              onChange={handleBooleanChange((shouldScheduleAfterCurrent) =>
-                setShouldScheduleAfterCurrent(shouldScheduleAfterCurrent)
-              )}
-            />
+      <SettingsPopover
+        setActiveTaskList={setActiveTaskList}
+        isColoredByPriority={colorContext.isColoredByPriority}
+        onChange={onChange}
+        dateToStr={dateToStr}
+        startTime={startTime}
+        endTime={endTime}
+        shouldScheduleAfterCurrent={shouldScheduleAfterCurrent}
+        setShouldScheduleAfterCurrent={setShouldScheduleAfterCurrent}
+      />
 
-            <div style={{ display: "flex", gap: 10 }}>
-              <FormGroup inline label="start time">
-                <InputGroup
-                  defaultValue={dateToStr(startTime)}
-                  onBlur={(e) => {
-                    setActiveTaskList({ viewStart: e.target.value });
-                  }}
-                />
-              </FormGroup>
-            </div>
-            <div>
-              <FormGroup inline label="end time">
-                <InputGroup
-                  defaultValue={dateToStr(endTime)}
-                  onBlur={(e) => {
-                    setActiveTaskList({ viewEnd: e.target.value });
-                  }}
-                />
-              </FormGroup>
-            </div>
-          </Card>
-        }
+      <SearchContext.Provider
+        value={{ ...searchContext, onChange: setSearchContext }}
       >
-        <Button icon="cog" rightIcon="chevron-down" />
-      </Popover2>
-
-      <TaskColorContext.Provider value={{ ...colorContext, onChange }}>
-        <TimeBlockDay
-          start={dateToStr(startTime)}
-          end={dateToStr(endTime)}
-          majorUnit={1}
-          defaultEntries={activeTaskList.timeBlockEntries}
-          onEntryChange={handleNewTaskList}
-        />
-      </TaskColorContext.Provider>
+        <TaskColorContext.Provider value={{ ...colorContext, onChange }}>
+          <>
+            <TimeBlockDay
+              start={dateToStr(startTime)}
+              end={dateToStr(endTime)}
+              majorUnit={1}
+              defaultEntries={activeTaskList.timeBlockEntries}
+              onEntryChange={handleNewTaskList}
+            />
+            <SearchOverlay />
+          </>
+        </TaskColorContext.Provider>
+      </SearchContext.Provider>
     </>
   );
 }

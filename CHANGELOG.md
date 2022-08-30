@@ -1,5 +1,9 @@
 # Time Block changelog
 
+## 0.0.12 -- 2022-08-29 23:08:31
+
+- Allow for searching via the `shift + s` shortcut
+
 ## 0.0.11 -- 2022-08-25 22:26:06
 
 - Use Blueprint `useHotKey` which gives an overlay for free

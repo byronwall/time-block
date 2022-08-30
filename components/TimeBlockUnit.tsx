@@ -6,6 +6,8 @@ import {
   Overlay,
   useHotkeys,
 } from "@blueprintjs/core";
+
+import Highlighter from "react-highlight-words";
 import { Popover2 } from "@blueprintjs/popover2";
 import {
   CSSProperties,
@@ -17,6 +19,7 @@ import {
 } from "react";
 import { TimeBlockEntry } from "../model/model";
 import { getTextColor } from "./helpers";
+import { SearchContext } from "./SearchContext";
 import { TaskColorContext } from "./TaskColorContext";
 import { DragLoc } from "./TimeBlockDay";
 import { TimeBlockDetails } from "./TimeBlockDetails";
@@ -50,6 +53,10 @@ export function TimeBlockUnit(props: TimeBlockUnitProps) {
     shouldColorDefault,
   } = props;
 
+  const searchContext = useContext(SearchContext);
+  const isLiveSearch = searchContext.isSearchOpen && searchContext.searchText;
+  const isSearchMatch = block.description.includes(searchContext.searchText);
+
   const zeroPx = hourScale?.(0) ?? 0;
   const durationPx = hourScale?.(new Date(block.duration * 1000)) ?? 80;
 
@@ -81,12 +88,22 @@ export function TimeBlockUnit(props: TimeBlockUnitProps) {
 
   const colorContext = useContext(TaskColorContext);
 
-  const backgroundColor =
+  let backgroundColor =
     shouldColorDefault || !colorContext.isColoredByPriority
       ? block.isComplete
         ? "#f5f5f5"
         : "#C0DFF7"
       : colorContext.getColorFromPriority(block.priority ?? 5);
+
+  // search overrides color
+  if (isLiveSearch) {
+    if (isSearchMatch) {
+      // a nice orange color
+      backgroundColor = "#ffc619";
+    } else {
+      backgroundColor = "#f5f5f5";
+    }
+  }
 
   const borderStyle = block.isFrozen ? "dashed" : "solid";
 
@@ -282,7 +299,12 @@ export function TimeBlockUnit(props: TimeBlockUnitProps) {
               />
             </div>
           ) : (
-            <div>{block.description}</div>
+            <Highlighter
+              highlightClassName="highlight"
+              searchWords={isLiveSearch ? [searchContext.searchText] : []}
+              autoEscape={true}
+              textToHighlight={block.description}
+            />
           )}
         </div>
         <div>
