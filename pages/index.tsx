@@ -3,22 +3,21 @@ import Link from "next/link";
 import { useState } from "react";
 
 import { TaskListSelector } from "../components/TaskListSelector";
-import { TaskList } from "../model/model";
+import { createDefaultTaskList, TaskList } from "../model/model";
 import { findAll } from "../util/db";
-import { createUuid } from "../util/helpers";
 
 interface TasksProps {
   taskLists: TaskList[];
-  activeTaskList: TaskList;
+  initialTaskList: TaskList;
 }
 
 export default function Tasks(props: TasksProps) {
-  // store active task list in state
+  const { taskLists, initialTaskList } = props;
 
   const defaultTaskList = createDefaultTaskList();
 
   const [activeTaskList, setActiveTaskList] = useState(
-    props.activeTaskList ?? defaultTaskList
+    initialTaskList ?? defaultTaskList
   );
 
   const handleTaskListNameChange = (name: string) => {
@@ -46,7 +45,7 @@ export default function Tasks(props: TasksProps) {
         <h3>choose a task list</h3>
 
         <ul>
-          {props.taskLists.map((taskList) => (
+          {taskLists.map((taskList) => (
             <li key={taskList.id}>
               <Link href={`/blocks/${taskList.id}`}>{taskList.name}</Link>
             </li>
@@ -54,7 +53,7 @@ export default function Tasks(props: TasksProps) {
         </ul>
 
         <TaskListSelector
-          items={props.taskLists}
+          items={taskLists}
           activeItem={activeTaskList}
           onItemSelect={setActiveTaskList}
         />
@@ -70,16 +69,6 @@ export default function Tasks(props: TasksProps) {
       <div style={{ marginBottom: 100 }} />
     </div>
   );
-}
-
-function createDefaultTaskList(): TaskList {
-  return {
-    name: "default",
-    timeBlockEntries: [],
-    id: createUuid(),
-    viewEnd: "17:00",
-    viewStart: "08:00",
-  };
 }
 
 export async function getServerSideProps(context): Promise<{

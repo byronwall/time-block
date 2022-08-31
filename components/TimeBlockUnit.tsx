@@ -1,28 +1,19 @@
-import {
-  Button,
-  Hotkey,
-  HotkeyConfig,
-  InputGroup,
-  Overlay,
-  useHotkeys,
-} from "@blueprintjs/core";
-
-import Highlighter from "react-highlight-words";
-import { Popover2 } from "@blueprintjs/popover2";
+import { HotkeyConfig, useHotkeys } from "@blueprintjs/core";
 import {
   CSSProperties,
   useCallback,
   useContext,
-  useEffect,
   useMemo,
   useState,
 } from "react";
+
 import { TimeBlockEntry } from "../model/model";
 import { getTextColor } from "./helpers";
 import { SearchContext } from "./SearchContext";
 import { TaskColorContext } from "./TaskColorContext";
+import { TaskUnitDetailsPopover } from "./TaskUnitDetailsPopover";
+import { TaskUnitEditOrDisplay } from "./TaskUnitEditOrDisplay";
 import { DragLoc } from "./TimeBlockDay";
-import { TimeBlockDetails } from "./TimeBlockDetails";
 
 interface TimeBlockUnitProps {
   onStartDrag?: (id: string, location: DragLoc, clientY: number) => void;
@@ -62,10 +53,8 @@ export function TimeBlockUnit(props: TimeBlockUnitProps) {
 
   const height = Math.max(durationPx - zeroPx, 0);
 
-  // track isEdit via state
   const [isEdit, setIsEdit] = useState(false);
 
-  // track edit text in state
   const [editText, setEditText] = useState(block.description);
 
   const acceptEditText = () => {
@@ -111,7 +100,6 @@ export function TimeBlockUnit(props: TimeBlockUnitProps) {
 
   const [isMouseInside, setIsMouseInside] = useState(false);
 
-  // track isDetailsOpen via state
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
   const onChangePartial = useCallback(
@@ -138,6 +126,7 @@ export function TimeBlockUnit(props: TimeBlockUnitProps) {
       {
         combo: "e",
         label: "edit",
+        preventDefault: true,
         global: true,
         group: "hover on block",
         disabled: !isMouseInside,
@@ -278,49 +267,22 @@ export function TimeBlockUnit(props: TimeBlockUnitProps) {
       )}
 
       <div style={{ display: "flex" }}>
-        <div>
-          {isEdit ? (
-            <div>
-              <InputGroup
-                value={editText}
-                onChange={(evt) => setEditText(evt.target.value)}
-                onKeyDown={(evt) => {
-                  if (evt.key === "Enter") {
-                    acceptEditText();
-                  }
-                  if (evt.key === "Escape") {
-                    setIsEdit(false);
-                  }
-                }}
-                autoFocus
-                rightElement={
-                  <Button minimal icon="tick" onClick={acceptEditText} />
-                }
-              />
-            </div>
-          ) : (
-            <Highlighter
-              highlightClassName="highlight"
-              searchWords={isLiveSearch ? [searchContext.searchText] : []}
-              autoEscape={true}
-              textToHighlight={block.description}
-            />
-          )}
-        </div>
-        <div>
-          <Popover2
-            isOpen={isDetailsOpen}
-            onClose={() => setIsDetailsOpen(false)}
-            content={<TimeBlockDetails block={block} onChange={onChange} />}
-            position="right"
-          >
-            <Button
-              icon="chevron-down"
-              minimal
-              onClick={() => setIsDetailsOpen(true)}
-            />
-          </Popover2>
-        </div>
+        <TaskUnitEditOrDisplay
+          description={block.description}
+          searchText={searchContext.searchText}
+          isLiveSearch={isLiveSearch}
+          isEdit={isEdit}
+          setIsEdit={setIsEdit}
+          editText={editText}
+          setEditText={setEditText}
+          acceptEditText={acceptEditText}
+        />
+        <TaskUnitDetailsPopover
+          onChange={onChange}
+          block={block}
+          isDetailsOpen={isDetailsOpen}
+          setIsDetailsOpen={setIsDetailsOpen}
+        />
       </div>
     </div>
   );

@@ -20,13 +20,14 @@ export function SearchOverlay() {
     if (isSearchOpen && !prevIsOpen) {
       inputRef.current?.focus();
     }
-  }, [isSearchOpen, prevIsOpen]);
+  });
 
   return (
     <Overlay
       isOpen={isSearchOpen}
       onClose={() => onChange({ isSearchOpen: false })}
       hasBackdrop={false}
+      transitionDuration={0}
     >
       <Card elevation={4}>
         <InputGroup

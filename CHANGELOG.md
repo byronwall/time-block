@@ -1,5 +1,12 @@
 # Time Block changelog
 
+## 0.0.13 -- 2022-08-29 23:08:31
+
+- Ensure that `preventDefault` is used when editing a task - prevent `e` from being typed
+- Refactor some code to prepare for multiple days
+- Support multiple days in the main view
+- Remove animation from search popup
+
 ## 0.0.12 -- 2022-08-29 23:08:31
 
 - Allow for searching via the `shift + s` shortcut

@@ -12,10 +12,7 @@ interface TimeBlockDetailsProps {
 }
 
 export function TimeBlockDetails(props: TimeBlockDetailsProps) {
-  // des props
   const { block, onChange } = props;
-
-  // des block
 
   const handleChange = (data: Partial<TimeBlockEntry>) => {
     onChange(block.id, {
@@ -24,10 +21,8 @@ export function TimeBlockDetails(props: TimeBlockDetailsProps) {
     });
   };
 
-  // des block copy
   const { description, start } = block;
 
-  // use the color context
   const { getColorFromPriority } = useContext(TaskColorContext);
 
   const durationsCommon = [15, 30, 45, 60, 90, 120, 180];
@@ -80,7 +75,6 @@ export function TimeBlockDetails(props: TimeBlockDetailsProps) {
           ))}
         </div>
 
-        {/* add a switch to track complete */}
         <div>
           <Switch
             label="Complete"
@@ -91,7 +85,6 @@ export function TimeBlockDetails(props: TimeBlockDetailsProps) {
           />
         </div>
 
-        {/* add a switch to track isFrozen */}
         <div>
           <Switch
             label="Frozen"

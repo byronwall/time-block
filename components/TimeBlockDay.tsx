@@ -1,4 +1,4 @@
-import { Button, FormGroup, InputGroup } from "@blueprintjs/core";
+import { FormGroup, InputGroup } from "@blueprintjs/core";
 import {
   scaleTime,
   timeFormat,
@@ -8,9 +8,10 @@ import {
   utcParse,
 } from "d3";
 import React, { useRef, useState } from "react";
-import { TimeBlockEntry } from "../model/model";
 
+import { TimeBlockEntry } from "../model/model";
 import { createUuid } from "../util/helpers";
+import { TimeBlockSidebarTicks } from "./TimeBlockSidebarTicks";
 import { TimeBlockUnit } from "./TimeBlockUnit";
 
 interface TimeBlockDayProps {
@@ -28,8 +29,11 @@ export type DragLoc = "top" | "bottom" | "all";
 export function TimeBlockDay(props: TimeBlockDayProps) {
   // store array of time blocks in state
 
-  const timeBlocks = props.defaultEntries ?? [];
-  const setTimeBlocks = props.onEntryChange;
+  // des props
+  const { start, end, defaultEntries, onEntryChange } = props;
+
+  const timeBlocks = defaultEntries ?? [];
+  const setTimeBlocks = onEntryChange;
 
   // store new task text in state
   const [newTaskText, setNewTaskText] = useState("");
@@ -59,10 +63,12 @@ export function TimeBlockDay(props: TimeBlockDayProps) {
 
   const parser = utcParse("%H:%M");
 
-  const start = parser(props.start);
-  const end = parser(props.end);
+  const dateStart = parser(start);
+  const dateEnd = parser(end);
 
-  const hourScale = scaleTime().domain([start, end]).range([0, maxHeight]);
+  const hourScale = scaleTime()
+    .domain([dateStart, dateEnd])
+    .range([0, maxHeight]);
 
   const hours = hourScale.ticks(timeHour);
 
@@ -75,39 +81,10 @@ export function TimeBlockDay(props: TimeBlockDayProps) {
 
   const colHash = {};
 
-  const offsets = sortedBlocks.reduce<TimeBlockEntry[][]>((hash, block) => {
-    if (hash.length === 0) {
-      colHash[block.id] = 0;
-      hash.push([block]);
-      return hash;
-    }
-
-    // check if current block can be added after last item in each col array
-
-    let didAdd = false;
-    hash.forEach((col, i) => {
-      if (didAdd) return;
-      const lastBlock = col[col.length - 1];
-      if (lastBlock.start + lastBlock.duration * 1000 <= block.start) {
-        col.push(block);
-        colHash[block.id] = i;
-        didAdd = true;
-        return;
-      }
-    });
-
-    if (!didAdd) {
-      hash.push([block]);
-      colHash[block.id] = hash.length - 1;
-    }
-
-    return hash;
-  }, []);
-
   function getFirstStartTime() {
     const maxEndTime = scheduledTasks.reduce((max, block) => {
       return Math.max(max, block.start + block.duration * 1000);
-    }, start.getTime());
+    }, dateStart.getTime());
 
     return maxEndTime;
   }
@@ -147,7 +124,6 @@ export function TimeBlockDay(props: TimeBlockDayProps) {
       const newBLock = { ...block };
       if (newBLock.id === dragId) {
         let bounds = parent.getBoundingClientRect();
-        let x = evt.clientX - bounds.left;
 
         const dynamicDragStartTime = hourScale.invert(dragStart);
 
@@ -285,20 +261,11 @@ export function TimeBlockDay(props: TimeBlockDayProps) {
       </div>
 
       <div style={{ display: "flex", marginTop: 20 }}>
-        <div style={{ position: "relative", width: 100 }}>
-          {hours.map((hour, idx) => (
-            <div
-              key={idx}
-              style={{
-                position: "absolute",
-                top: hourScale(hour),
-                borderTop: "1px solid black",
-              }}
-            >
-              {formatter(hour)}
-            </div>
-          ))}
-        </div>
+        <TimeBlockSidebarTicks
+          hourScale={hourScale}
+          hours={hours}
+          formatter={formatter}
+        />
         <div
           ref={blockDivRef}
           style={{
