@@ -18,21 +18,25 @@ export interface TimeBlockDay {
 export interface TaskList {
   id: string;
   name: string;
-  timeBlockEntries: TimeBlockEntry[];
 
   timeBlockDays: TimeBlockDay[];
+  unscheduledEntries: TimeBlockEntry[];
 
   viewStart: string;
   viewEnd: string;
 }
 
+export interface TaskListOld {
+  timeBlockEntries: TimeBlockEntry[];
+}
+
 export function createDefaultTaskList(): TaskList {
   return {
     name: "default",
-    timeBlockEntries: [],
     id: createUuid(),
     viewEnd: "17:00",
     viewStart: "08:00",
     timeBlockDays: [],
+    unscheduledEntries: [],
   };
 }

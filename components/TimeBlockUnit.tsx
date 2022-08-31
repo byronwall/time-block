@@ -15,7 +15,7 @@ import { TaskUnitDetailsPopover } from "./TaskUnitDetailsPopover";
 import { TaskUnitEditOrDisplay } from "./TaskUnitEditOrDisplay";
 import { DragLoc } from "./TimeBlockDay";
 
-interface TimeBlockUnitProps {
+export interface TimeBlockUnitProps {
   onStartDrag?: (id: string, location: DragLoc, clientY: number) => void;
 
   onDelete(id: string): void;

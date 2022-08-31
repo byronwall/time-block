@@ -1,8 +1,10 @@
 import {
   Button,
   EditableText,
+  FormGroup,
   H2,
   HotkeyConfig,
+  InputGroup,
   useHotkeys,
 } from "@blueprintjs/core";
 import { scaleOrdinal, timeFormat, utcFormat, utcParse } from "d3";
@@ -22,18 +24,23 @@ import { findOneTaskList } from "../../util/db";
 import { quickPost } from "../../util/quickPost";
 import { SearchOverlay } from "../../components/SearchOverlay";
 import { getTImeBlocksWithoutOverlap } from "../../components/helpers";
+import { createUuid } from "../../util/helpers";
+import {
+  TimeBlockUnit,
+  TimeBlockUnitProps,
+} from "../../components/TimeBlockUnit";
 
 interface TimeBlockViewProps {
-  activeTaskList: TaskList;
+  initialTaskList: TaskList;
 }
 
 export default function TimeBlockView(props: TimeBlockViewProps) {
-  // store the active list in state too
-  const [activeTaskList, setActiveTaskList] = useSetState(props.activeTaskList);
+  const { initialTaskList } = props;
 
-  const isDirty = !isEqual(activeTaskList, props.activeTaskList);
+  const [activeTaskList, setActiveTaskList] = useSetState(initialTaskList);
 
-  // store the color provider state here
+  const isDirty = !isEqual(activeTaskList, initialTaskList);
+
   const [colorContext, setColorContext] = useState<ColorSansHandler>({
     getColorFromPriority: (priority: number) => {
       const scale = scaleOrdinal<number, string>()
@@ -54,8 +61,20 @@ export default function TimeBlockView(props: TimeBlockViewProps) {
     await quickPost("/api/insertTaskList", activeTaskList);
   };
 
-  const handleNewTaskList = (entries: TimeBlockEntry[]) => {
-    setActiveTaskList({ timeBlockEntries: entries });
+  const handleNewTaskList = (entries: TimeBlockEntry[], idx: number) => {
+    // update the entries for single day
+
+    const newDays = activeTaskList.timeBlockDays.map((day, i) => {
+      if (i === idx) {
+        return {
+          ...day,
+          entries,
+        };
+      }
+      return day;
+    });
+
+    setActiveTaskList({ timeBlockDays: newDays });
   };
 
   const handleTaskListNameChange = (name: string) => {
@@ -87,25 +106,6 @@ export default function TimeBlockView(props: TimeBlockViewProps) {
   const hotkeys = useMemo<HotkeyConfig[]>(
     () => [
       {
-        combo: "shift+r",
-        label: "rebalance",
-        global: true,
-        group: "time block view",
-
-        onKeyDown: () => {
-          const schedStartTime = shouldScheduleAfterCurrent
-            ? +nowInRightUnits
-            : +startTime;
-
-          const newEntries = getTImeBlocksWithoutOverlap(
-            activeTaskList.timeBlockEntries,
-            schedStartTime
-          );
-
-          setActiveTaskList({ timeBlockEntries: newEntries });
-        },
-      },
-      {
         combo: "shift+c",
         label: "color by priority",
         global: true,
@@ -129,19 +129,68 @@ export default function TimeBlockView(props: TimeBlockViewProps) {
         },
       },
     ],
-    [
-      activeTaskList.timeBlockEntries,
-      startTime,
-      setActiveTaskList,
-      colorContext.isColoredByPriority,
-      onChange,
-      nowInRightUnits,
-      shouldScheduleAfterCurrent,
-      setSearchContext,
-    ]
+    [colorContext.isColoredByPriority, onChange, setSearchContext]
   );
 
   useHotkeys(hotkeys);
+
+  const [newTaskText, setNewTaskText] = useState("");
+
+  const handleBlockSchedule = (id: string) => {
+    // remove from unscheduled
+    const newUnscheduled = activeTaskList.unscheduledEntries.filter((entry) => {
+      return entry.id !== id;
+    });
+
+    // add to first day
+    const newDays = [...activeTaskList.timeBlockDays];
+    const firstDay = newDays[0];
+    const taskToSched = activeTaskList.unscheduledEntries.find(
+      (entry) => entry.id === id
+    );
+
+    taskToSched.start = getFirstStartTime();
+    firstDay.entries.push(taskToSched);
+
+    setActiveTaskList({
+      unscheduledEntries: newUnscheduled,
+      timeBlockDays: newDays,
+    });
+  };
+
+  function getFirstStartTime() {
+    const entriesFirstDay = activeTaskList.timeBlockDays[0].entries;
+    const maxEndTime = entriesFirstDay.reduce((max, block) => {
+      return Math.max(max, block.start + block.duration * 1000);
+    }, startTime.getTime());
+
+    return maxEndTime;
+  }
+
+  const handleCreateTaskClick = async (isScheduled = true) => {
+    const newStartTime = isScheduled ? getFirstStartTime() : undefined;
+
+    // add new task to state
+    const task: TimeBlockEntry = {
+      id: createUuid(),
+      description: newTaskText,
+      duration: 60 * 60,
+      start: newStartTime,
+      priority: 5,
+    };
+
+    const newDays = [...activeTaskList.timeBlockDays];
+    const firstDay = newDays[0];
+    firstDay.entries.push(task);
+    setActiveTaskList({ timeBlockDays: newDays });
+
+    setNewTaskText("");
+  };
+
+  const TimeBlockCommon: Pick<TimeBlockUnitProps, "onDelete" | "onChange"> = {
+    onChange: (id: string, newEntry: TimeBlockEntry) => {},
+    onDelete: (id: string) => {},
+  };
 
   return (
     <>
@@ -170,13 +219,62 @@ export default function TimeBlockView(props: TimeBlockViewProps) {
       >
         <TaskColorContext.Provider value={{ ...colorContext, onChange }}>
           <>
-            <TimeBlockDay
-              start={dateToStr(startTime)}
-              end={dateToStr(endTime)}
-              majorUnit={1}
-              defaultEntries={activeTaskList.timeBlockEntries}
-              onEntryChange={handleNewTaskList}
-            />
+            <div style={{ margin: 30 }}>
+              <FormGroup inline>
+                <InputGroup
+                  value={newTaskText}
+                  onChange={(evt) => setNewTaskText(evt.target.value)}
+                  onKeyDown={(evt) => {
+                    if (evt.key === "Enter") {
+                      handleCreateTaskClick(!evt.metaKey);
+                    }
+                  }}
+                  style={{ width: 400 }}
+                />
+              </FormGroup>
+            </div>
+            <div>
+              <h3>unscheduled</h3>
+              <div style={{ display: "flex", flexWrap: "wrap" }}>
+                {activeTaskList.unscheduledEntries.map((block) => (
+                  <TimeBlockUnit
+                    {...TimeBlockCommon}
+                    key={block.id}
+                    block={block}
+                    onSchedule={handleBlockSchedule}
+                  />
+                ))}
+              </div>
+            </div>
+            <div>
+              actions
+              <Button
+                text="add day"
+                onClick={() => {
+                  const newDays = activeTaskList.timeBlockDays.concat([
+                    {
+                      label: "New",
+                      entries: [],
+                    },
+                  ]);
+                  setActiveTaskList({ timeBlockDays: newDays });
+                }}
+              />
+            </div>
+            <div style={{ display: "flex" }}>
+              {activeTaskList.timeBlockDays.map((day, idx) => (
+                <TimeBlockDay
+                  key={idx}
+                  shouldShowLeftSidebar={idx === 0}
+                  dateStart={startTime}
+                  dateEnd={endTime}
+                  defaultEntries={day.entries}
+                  onEntryChange={(entries) => handleNewTaskList(entries, idx)}
+                  shouldScheduleAfterCurrent={shouldScheduleAfterCurrent}
+                  nowInRightUnits={nowInRightUnits}
+                />
+              ))}
+            </div>
             <SearchOverlay />
           </>
         </TaskColorContext.Provider>
@@ -190,11 +288,11 @@ export async function getServerSideProps(context): Promise<{
 }> {
   const id = context.params.id;
 
-  let activeTaskList = await findOneTaskList(id);
+  let initialTaskList = await findOneTaskList(id);
 
   return {
     props: {
-      activeTaskList,
+      initialTaskList,
     },
   };
 }

@@ -1,4 +1,4 @@
-import { FormGroup, InputGroup } from "@blueprintjs/core";
+import { FormGroup, InputGroup, useHotkeys } from "@blueprintjs/core";
 import {
   scaleTime,
   timeFormat,
@@ -7,19 +7,24 @@ import {
   utcFormat,
   utcParse,
 } from "d3";
-import React, { useRef, useState } from "react";
+import React, { useMemo, useRef, useState } from "react";
 
 import { TimeBlockEntry } from "../model/model";
 import { createUuid } from "../util/helpers";
+import { getTImeBlocksWithoutOverlap } from "./helpers";
 import { TimeBlockSidebarTicks } from "./TimeBlockSidebarTicks";
 import { TimeBlockUnit } from "./TimeBlockUnit";
 
 interface TimeBlockDayProps {
-  start: string;
-  end: string;
-  majorUnit: number;
+  dateStart: Date;
+  dateEnd: Date;
 
   defaultEntries?: TimeBlockEntry[];
+
+  shouldScheduleAfterCurrent: boolean;
+  nowInRightUnits: Date;
+
+  shouldShowLeftSidebar: boolean;
 
   onEntryChange(entries: TimeBlockEntry[]): void;
 }
@@ -30,13 +35,18 @@ export function TimeBlockDay(props: TimeBlockDayProps) {
   // store array of time blocks in state
 
   // des props
-  const { start, end, defaultEntries, onEntryChange } = props;
+  const {
+    dateStart,
+    dateEnd,
+    defaultEntries,
+    onEntryChange,
+    nowInRightUnits,
+    shouldScheduleAfterCurrent,
+    shouldShowLeftSidebar,
+  } = props;
 
   const timeBlocks = defaultEntries ?? [];
   const setTimeBlocks = onEntryChange;
-
-  // store new task text in state
-  const [newTaskText, setNewTaskText] = useState("");
 
   // track the id which is dragging in state
   const [dragId, setDragId] = useState("");
@@ -51,9 +61,6 @@ export function TimeBlockDay(props: TimeBlockDayProps) {
   const scheduledTasks = timeBlocks.filter(
     (block) => block.start !== undefined
   );
-  const unscheduledTasks = timeBlocks
-    .filter((block) => block.start === undefined)
-    .sort((a, b) => a.priority - b.priority);
 
   // use a ref to track div
 
@@ -62,9 +69,6 @@ export function TimeBlockDay(props: TimeBlockDayProps) {
   const maxHeight = 600;
 
   const parser = utcParse("%H:%M");
-
-  const dateStart = parser(start);
-  const dateEnd = parser(end);
 
   const hourScale = scaleTime()
     .domain([dateStart, dateEnd])
@@ -80,30 +84,6 @@ export function TimeBlockDay(props: TimeBlockDayProps) {
   sortedBlocks.sort((a, b) => a.start - b.start);
 
   const colHash = {};
-
-  function getFirstStartTime() {
-    const maxEndTime = scheduledTasks.reduce((max, block) => {
-      return Math.max(max, block.start + block.duration * 1000);
-    }, dateStart.getTime());
-
-    return maxEndTime;
-  }
-
-  const handleCreateTaskClick = async (isScheduled = true) => {
-    const newStartTime = isScheduled ? getFirstStartTime() : undefined;
-
-    // add new task to state
-    const task: TimeBlockEntry = {
-      id: createUuid(),
-      description: newTaskText,
-      duration: 60 * 60,
-      start: newStartTime,
-      priority: 5,
-    };
-
-    setTimeBlocks([...timeBlocks, task]);
-    setNewTaskText("");
-  };
 
   const handleMouseMove = (evt: React.MouseEvent) => {
     evt.stopPropagation();
@@ -208,16 +188,6 @@ export function TimeBlockDay(props: TimeBlockDayProps) {
 
     setTimeBlocks(newTimeBlocks);
   };
-  const handleBlockSchedule = (id: string) => {
-    const newTimeBlocks = [...timeBlocks];
-    newTimeBlocks.forEach((block) => {
-      if (block.id === id) {
-        block.start = getFirstStartTime();
-      }
-    });
-
-    setTimeBlocks(newTimeBlocks);
-  };
 
   const TimeBlockCommon = {
     onChange: handleBlockChange,
@@ -229,47 +199,53 @@ export function TimeBlockDay(props: TimeBlockDayProps) {
   const nowParsed = parser(nowFormatted);
   const curTimeTop = hourScale(nowParsed);
 
+  const hotkeys = useMemo(
+    () => [
+      {
+        combo: "shift+r",
+        label: "rebalance",
+        global: true,
+        group: "time block view",
+
+        onKeyDown: () => {
+          const schedStartTime = shouldScheduleAfterCurrent
+            ? +nowInRightUnits
+            : +dateStart;
+
+          const newEntries = getTImeBlocksWithoutOverlap(
+            timeBlocks,
+            schedStartTime
+          );
+
+          onEntryChange(newEntries);
+        },
+      },
+    ],
+    [
+      timeBlocks,
+      onEntryChange,
+      shouldScheduleAfterCurrent,
+      nowInRightUnits,
+      dateStart,
+    ]
+  );
+
+  useHotkeys(hotkeys);
+
   return (
     <div style={{ marginBottom: 100 }}>
-      <div style={{ margin: 30 }}>
-        <FormGroup inline>
-          <InputGroup
-            value={newTaskText}
-            onChange={(evt) => setNewTaskText(evt.target.value)}
-            onKeyDown={(evt) => {
-              if (evt.key === "Enter") {
-                handleCreateTaskClick(!evt.metaKey);
-              }
-            }}
-            style={{ width: 400 }}
-          />
-        </FormGroup>
-      </div>
-
-      <div>
-        <h3>unscheduled</h3>
-        <div style={{ display: "flex", flexWrap: "wrap" }}>
-          {unscheduledTasks.map((block) => (
-            <TimeBlockUnit
-              {...TimeBlockCommon}
-              key={block.id}
-              block={block}
-              onSchedule={handleBlockSchedule}
-            />
-          ))}
-        </div>
-      </div>
-
       <div style={{ display: "flex", marginTop: 20 }}>
-        <TimeBlockSidebarTicks
-          hourScale={hourScale}
-          hours={hours}
-          formatter={formatter}
-        />
+        {shouldShowLeftSidebar && (
+          <TimeBlockSidebarTicks
+            hourScale={hourScale}
+            hours={hours}
+            formatter={formatter}
+          />
+        )}
         <div
           ref={blockDivRef}
           style={{
-            width: 400,
+            width: 250,
             minHeight: maxHeight,
             border: "1px solid black",
             position: "relative",

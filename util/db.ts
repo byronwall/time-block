@@ -1,5 +1,6 @@
+import { ReadStream } from "fs";
 import Redis from "ioredis";
-import { TaskList } from "../model/model";
+import { TaskList, TaskListOld, TimeBlockDay } from "../model/model";
 
 const { REDIS_URL = "" } = process.env;
 // delete process.env.REDIS_URL;
@@ -35,28 +36,55 @@ export async function findAll() {
 export async function findOneTaskList(id: string) {
   const reply = await client.hget("BLOCKS", id);
 
-  const taskList = JSON.parse(reply) as TaskList;
+  const _taskList = JSON.parse(reply) as TaskList;
 
   // data migration steps
-  migrateTaskListData(taskList);
+  const taskList = migrateTaskListData(_taskList);
 
   return taskList;
 }
 
-function migrateTaskListData(taskList: TaskList) {
-  taskList.timeBlockEntries.forEach((entry) => {
-    if (entry.priority === undefined) {
-      entry.priority = 5;
-    }
-  });
+type TaskListDb = TaskList & Partial<TaskListOld>;
 
-  if (taskList.viewStart === undefined) {
-    taskList.viewStart = "08:00";
+function migrateTaskListData(taskList: TaskListDb): TaskList {
+  const { timeBlockEntries, ..._newTaskList } = taskList;
+
+  const newTaskList = _newTaskList as TaskList;
+
+  // handle the tasks if needed
+  if (taskList.timeBlockEntries) {
+    taskList.timeBlockEntries.forEach((entry) => {
+      if (entry.priority === undefined) {
+        entry.priority = 5;
+      }
+    });
+
+    const unscheduledTasks = taskList.timeBlockEntries
+      .filter((block) => block.start === undefined)
+      .sort((a, b) => a.priority - b.priority);
+
+    const firstDay: TimeBlockDay = {
+      label: "Today",
+      entries: taskList.timeBlockEntries.filter(
+        (block) => block.start !== undefined
+      ),
+    };
+
+    newTaskList.timeBlockDays = [firstDay];
+    newTaskList.unscheduledEntries = unscheduledTasks;
   }
 
-  if (taskList.viewEnd === undefined) {
-    taskList.viewEnd = "17:00";
+  // migrate the time blocks into the first day if needed
+
+  if (newTaskList.viewStart === undefined) {
+    newTaskList.viewStart = "08:00";
   }
+
+  if (newTaskList.viewEnd === undefined) {
+    newTaskList.viewEnd = "17:00";
+  }
+
+  return newTaskList;
 }
 
 export async function insertTask(data: TaskList) {
