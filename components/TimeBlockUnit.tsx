@@ -1,4 +1,5 @@
 import { HotkeyConfig, useHotkeys } from "@blueprintjs/core";
+import { Atom, PrimitiveAtom, useAtom } from "jotai";
 import {
   CSSProperties,
   useCallback,
@@ -8,6 +9,7 @@ import {
 } from "react";
 
 import { TimeBlockEntry } from "../model/model";
+import { timeBlockEntriesAtom } from "../pages/blocks/[id]";
 import { getTextColor } from "./helpers";
 import { SearchContext } from "./SearchContext";
 import { TaskColorContext } from "./TaskColorContext";
@@ -18,31 +20,34 @@ import { DragLoc } from "./TimeBlockDay";
 export interface TimeBlockUnitProps {
   onStartDrag?: (id: string, location: DragLoc, clientY: number) => void;
 
-  onDelete(id: string): void;
-  onUnschedule?(id: string): void;
-  onSchedule?(id: string): void;
   onChange(id: string, newEntry: TimeBlockEntry): void;
 
+  // onDelete?(): void;
+
   hourScale?: d3.ScaleTime<number, number>;
+  // blockAtom: PrimitiveAtom<TimeBlockEntry>;
   block: TimeBlockEntry;
 
   column?: number;
 
   shouldColorDefault?: boolean;
+  startTime: Date;
 }
 
 export function TimeBlockUnit(props: TimeBlockUnitProps) {
   const {
     onStartDrag,
-    onDelete,
-    onUnschedule,
-    onSchedule,
+    // onDelete,
     onChange,
+    // blockAtom,
     block,
     hourScale,
     column,
     shouldColorDefault,
+    startTime,
   } = props;
+
+  const [timeBlockEntries, setem] = useAtom(timeBlockEntriesAtom);
 
   const searchContext = useContext(SearchContext);
   const isLiveSearch = searchContext.isSearchOpen && searchContext.searchText;
@@ -112,6 +117,51 @@ export function TimeBlockUnit(props: TimeBlockUnitProps) {
     [block, onChange]
   );
 
+  const handleDelete = useCallback(() => {
+    setem(timeBlockEntries.filter((e) => e.id !== block.id));
+  }, [timeBlockEntries, block.id, setem]);
+
+  const getFirstStartTime = useCallback(
+    (entriesFirstDay: TimeBlockEntry[] = []) => {
+      const maxEndTime = entriesFirstDay.reduce((max, block) => {
+        if (block.start === undefined) {
+          return max;
+        }
+
+        return Math.max(max, block.start + block.duration * 1000);
+      }, startTime.getTime());
+
+      return maxEndTime;
+    },
+    [startTime]
+  );
+
+  const handleBlockSchedule = useCallback(() => {
+    // remove from unscheduled
+    const taskToSched = timeBlockEntries.find((t) => t.id === block.id);
+
+    if (!taskToSched) {
+      return;
+    }
+
+    taskToSched.start = getFirstStartTime(timeBlockEntries);
+
+    setem([...timeBlockEntries]);
+  }, [block.id, getFirstStartTime, setem, timeBlockEntries]);
+
+  const handleBlockUnschedule = useCallback(() => {
+    // remove from unscheduled
+    const taskToSched = timeBlockEntries.find((t) => t.id === block.id);
+
+    if (!taskToSched) {
+      return;
+    }
+
+    taskToSched.start = undefined;
+
+    setem([...timeBlockEntries]);
+  }, [block.id, setem, timeBlockEntries]);
+
   // set up keyboard shortcuts
   const hotkeys = useMemo<HotkeyConfig[]>(
     () => [
@@ -138,7 +188,7 @@ export function TimeBlockUnit(props: TimeBlockUnitProps) {
         global: true,
         group: "hover on block",
         disabled: !isMouseInside,
-        onKeyDown: () => onDelete(block.id),
+        onKeyDown: () => handleDelete(),
       },
       {
         combo: "s",
@@ -147,7 +197,7 @@ export function TimeBlockUnit(props: TimeBlockUnitProps) {
         group: "hover on block",
         disabled: !isMouseInside,
         onKeyDown: () =>
-          isScheduled ? onUnschedule(block.id) : onSchedule(block.id),
+          isScheduled ? handleBlockUnschedule() : handleBlockSchedule(),
       },
       {
         combo: "1",
@@ -211,14 +261,13 @@ export function TimeBlockUnit(props: TimeBlockUnitProps) {
       isDetailsOpen,
       isMouseInside,
       isEdit,
-      block.id,
-      onDelete,
-      onSchedule,
-      onUnschedule,
       isScheduled,
-      onChangePartial,
       block.isComplete,
       block.isFrozen,
+      onChangePartial,
+      handleDelete,
+      handleBlockSchedule,
+      handleBlockUnschedule,
     ]
   );
 

@@ -1,8 +1,8 @@
 import { Button, Card, EditableText, Switch } from "@blueprintjs/core";
 import { useContext, useState } from "react";
+
 import { TimeBlockEntry } from "../model/model";
 import { handleBooleanChange } from "./helpers";
-
 import { TaskColorContext } from "./TaskColorContext";
 
 interface TimeBlockDetailsProps {

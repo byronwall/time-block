@@ -1,4 +1,4 @@
-import { FormGroup, InputGroup, useHotkeys } from "@blueprintjs/core";
+import { useHotkeys } from "@blueprintjs/core";
 import {
   scaleTime,
   timeFormat,
@@ -7,10 +7,11 @@ import {
   utcFormat,
   utcParse,
 } from "d3";
-import React, { useMemo, useRef, useState } from "react";
+import { useAtom } from "jotai";
+import React, { useCallback, useMemo, useRef, useState } from "react";
 
 import { TimeBlockEntry } from "../model/model";
-import { createUuid } from "../util/helpers";
+import { timeBlockEntriesAtom } from "../pages/blocks/[id]";
 import { getTImeBlocksWithoutOverlap } from "./helpers";
 import { TimeBlockSidebarTicks } from "./TimeBlockSidebarTicks";
 import { TimeBlockUnit } from "./TimeBlockUnit";
@@ -18,8 +19,6 @@ import { TimeBlockUnit } from "./TimeBlockUnit";
 interface TimeBlockDayProps {
   dateStart: Date;
   dateEnd: Date;
-
-  defaultEntries?: TimeBlockEntry[];
 
   shouldScheduleAfterCurrent: boolean;
   nowInRightUnits: Date;
@@ -38,15 +37,14 @@ export function TimeBlockDay(props: TimeBlockDayProps) {
   const {
     dateStart,
     dateEnd,
-    defaultEntries,
+
     onEntryChange,
     nowInRightUnits,
     shouldScheduleAfterCurrent,
     shouldShowLeftSidebar,
   } = props;
 
-  const timeBlocks = defaultEntries ?? [];
-  const setTimeBlocks = onEntryChange;
+  const [timeBlocks, setTimeBlocks] = useAtom(timeBlockEntriesAtom);
 
   // track the id which is dragging in state
   const [dragId, setDragId] = useState("");
@@ -162,32 +160,27 @@ export function TimeBlockDay(props: TimeBlockDayProps) {
     setDragStart(clientYStart);
   };
 
-  const handleBlockChange = (id: string, newBLock: TimeBlockEntry) => {
-    const newTimeBlocks = timeBlocks.map((block) => {
-      if (block.id === id) {
-        return newBLock;
-      }
-      return block;
-    });
+  const handleBlockChange = useCallback(
+    (id: string, newBLock: TimeBlockEntry) => {
+      const newTimeBlocks = timeBlocks.map((block) => {
+        if (block.id === id) {
+          return newBLock;
+        }
+        return block;
+      });
 
-    setTimeBlocks(newTimeBlocks);
-  };
+      setTimeBlocks(newTimeBlocks);
+    },
+    [timeBlocks, setTimeBlocks]
+  );
 
-  const handleBlockDelete = (id: string) => {
-    const newTimeBlocks = timeBlocks.filter((block) => block.id !== id);
-    setTimeBlocks(newTimeBlocks);
-  };
-
-  const handleBlockUnschedule = (id: string) => {
-    const newTimeBlocks = [...timeBlocks];
-    newTimeBlocks.forEach((block) => {
-      if (block.id === id) {
-        block.start = undefined;
-      }
-    });
-
-    setTimeBlocks(newTimeBlocks);
-  };
+  const handleBlockDelete = useCallback(
+    (id: string) => {
+      const newTimeBlocks = timeBlocks.filter((block) => block.id !== id);
+      setTimeBlocks(newTimeBlocks);
+    },
+    [timeBlocks, setTimeBlocks]
+  );
 
   const TimeBlockCommon = {
     onChange: handleBlockChange,
@@ -271,7 +264,7 @@ export function TimeBlockDay(props: TimeBlockDayProps) {
               block={block}
               column={colHash[block.id]}
               onStartDrag={handleStartDrag}
-              onUnschedule={handleBlockUnschedule}
+              startTime={dateStart}
               shouldColorDefault
             />
           ))}

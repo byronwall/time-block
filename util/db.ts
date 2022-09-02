@@ -47,9 +47,22 @@ export async function findOneTaskList(id: string) {
 type TaskListDb = TaskList & Partial<TaskListOld>;
 
 function migrateTaskListData(taskList: TaskListDb): TaskList {
-  const { timeBlockEntries, ..._newTaskList } = taskList;
+  const newTaskList = taskList as TaskList;
 
-  const newTaskList = _newTaskList as TaskList;
+  console.log("migrating task list data", taskList);
+
+  if (!("timeBlockEntries" in newTaskList)) {
+    newTaskList.timeBlockEntries = [];
+  }
+
+  if ("unscheduledEntries" in newTaskList) {
+    ((newTaskList as any).unscheduledEntries ?? []).forEach((c) =>
+      newTaskList.timeBlockEntries.push(c)
+    );
+  }
+
+  delete (newTaskList as any).unscheduledEntries;
+  delete (newTaskList as any).timeBlockDays;
 
   // handle the tasks if needed
   if (taskList.timeBlockEntries) {
@@ -58,20 +71,6 @@ function migrateTaskListData(taskList: TaskListDb): TaskList {
         entry.priority = 5;
       }
     });
-
-    const unscheduledTasks = taskList.timeBlockEntries
-      .filter((block) => block.start === undefined)
-      .sort((a, b) => a.priority - b.priority);
-
-    const firstDay: TimeBlockDay = {
-      label: "Today",
-      entries: taskList.timeBlockEntries.filter(
-        (block) => block.start !== undefined
-      ),
-    };
-
-    newTaskList.timeBlockDays = [firstDay];
-    newTaskList.unscheduledEntries = unscheduledTasks;
   }
 
   // migrate the time blocks into the first day if needed

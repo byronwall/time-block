@@ -8,36 +8,57 @@ import {
   useHotkeys,
 } from "@blueprintjs/core";
 import { scaleOrdinal, timeFormat, utcFormat, utcParse } from "d3";
+import { atom, Provider, useAtom } from "jotai";
+import { focusAtom } from "jotai/optics";
+import { splitAtom, useHydrateAtoms } from "jotai/utils";
 import { isEqual } from "lodash-es";
 import { useCallback, useMemo, useState } from "react";
 import { useSetState } from "react-use";
-import { SearchContext } from "../../components/SearchContext";
 
+import { SearchContext } from "../../components/SearchContext";
+import { SearchOverlay } from "../../components/SearchOverlay";
 import { SettingsPopover } from "../../components/SettingsPopover";
 import {
   ColorSansHandler,
   TaskColorContext,
 } from "../../components/TaskColorContext";
 import { TimeBlockDay } from "../../components/TimeBlockDay";
-import { TaskList, TimeBlockEntry } from "../../model/model";
-import { findOneTaskList } from "../../util/db";
-import { quickPost } from "../../util/quickPost";
-import { SearchOverlay } from "../../components/SearchOverlay";
-import { getTImeBlocksWithoutOverlap } from "../../components/helpers";
-import { createUuid } from "../../util/helpers";
+import { TimeBlockUnit } from "../../components/TimeBlockUnit";
 import {
-  TimeBlockUnit,
-  TimeBlockUnitProps,
-} from "../../components/TimeBlockUnit";
+  createDefaultTaskList,
+  TaskList,
+  TimeBlockEntry,
+} from "../../model/model";
+import { findOneTaskList } from "../../util/db";
+import { createUuid } from "../../util/helpers";
+import { quickPost } from "../../util/quickPost";
 
 interface TimeBlockViewProps {
   initialTaskList: TaskList;
 }
 
+const parser = utcParse("%H:%M");
+
+const dateToStr = utcFormat("%H:%M");
+const dateToStrLocal = timeFormat("%H:%M");
+
+export const taskListAtom = atom(createDefaultTaskList());
+
+// TODO: attempt to add the filter here for unscheduled items
+export const timeBlockEntriesAtom = focusAtom(taskListAtom, (c) =>
+  c.prop("timeBlockEntries")
+);
+
+export const timeBlockEntriesSplitAtom = splitAtom(timeBlockEntriesAtom);
+
+// TODO: this needs to go down one level so initial props can be passed in
 export default function TimeBlockView(props: TimeBlockViewProps) {
   const { initialTaskList } = props;
 
-  const [activeTaskList, setActiveTaskList] = useSetState(initialTaskList);
+  console.log("render main view");
+
+  useHydrateAtoms([[taskListAtom, initialTaskList]]);
+  const [activeTaskList, setActiveTaskList] = useAtom(taskListAtom);
 
   const isDirty = !isEqual(activeTaskList, initialTaskList);
 
@@ -61,36 +82,19 @@ export default function TimeBlockView(props: TimeBlockViewProps) {
     await quickPost("/api/insertTaskList", activeTaskList);
   };
 
-  const handleNewTaskList = (entries: TimeBlockEntry[], idx: number) => {
-    // update the entries for single day
-
-    const newDays = activeTaskList.timeBlockDays.map((day, i) => {
-      if (i === idx) {
-        return {
-          ...day,
-          entries,
-        };
-      }
-      return day;
-    });
-
-    setActiveTaskList({ timeBlockDays: newDays });
-  };
-
   const handleTaskListNameChange = (name: string) => {
-    setActiveTaskList({ name });
+    setActiveTaskList({ ...activeTaskList, name });
   };
 
   // store a string for start time in state
-  const parser = utcParse("%H:%M");
 
-  const dateToStr = utcFormat("%H:%M");
-  const dateToStrLocal = timeFormat("%H:%M");
-
-  const startTime = parser(activeTaskList.viewStart);
+  const startTime = useMemo(
+    () => parser(activeTaskList.viewStart),
+    [activeTaskList.viewStart]
+  );
   const endTime = parser(activeTaskList.viewEnd);
 
-  const nowInRightUnits = parser(dateToStrLocal(new Date()));
+  const nowInRightUnits = useMemo(() => parser(dateToStrLocal(new Date())), []);
 
   // store shouldScheduleAfterCurrent in state
   const [shouldScheduleAfterCurrent, setShouldScheduleAfterCurrent] =
@@ -136,36 +140,21 @@ export default function TimeBlockView(props: TimeBlockViewProps) {
 
   const [newTaskText, setNewTaskText] = useState("");
 
-  const handleBlockSchedule = (id: string) => {
-    // remove from unscheduled
-    const newUnscheduled = activeTaskList.unscheduledEntries.filter((entry) => {
-      return entry.id !== id;
-    });
+  const handleBulkTimeBlockChange = useCallback(
+    (entries: TimeBlockEntry[]) => {
+      // grab updated or existing
+      const newEntries = activeTaskList.timeBlockEntries.map((entry) => {
+        const newEntry = entries.find((e) => e.id === entry.id);
+        if (newEntry) {
+          return newEntry;
+        }
+        return entry;
+      });
 
-    // add to first day
-    const newDays = [...activeTaskList.timeBlockDays];
-    const firstDay = newDays[0];
-    const taskToSched = activeTaskList.unscheduledEntries.find(
-      (entry) => entry.id === id
-    );
-
-    taskToSched.start = getFirstStartTime();
-    firstDay.entries.push(taskToSched);
-
-    setActiveTaskList({
-      unscheduledEntries: newUnscheduled,
-      timeBlockDays: newDays,
-    });
-  };
-
-  function getFirstStartTime() {
-    const entriesFirstDay = activeTaskList.timeBlockDays[0].entries;
-    const maxEndTime = entriesFirstDay.reduce((max, block) => {
-      return Math.max(max, block.start + block.duration * 1000);
-    }, startTime.getTime());
-
-    return maxEndTime;
-  }
+      setActiveTaskList({ ...activeTaskList, timeBlockEntries: newEntries });
+    },
+    [activeTaskList, setActiveTaskList]
+  );
 
   const handleCreateTaskClick = async (isScheduled = true) => {
     const newStartTime = isScheduled ? getFirstStartTime() : undefined;
@@ -179,106 +168,94 @@ export default function TimeBlockView(props: TimeBlockViewProps) {
       priority: 5,
     };
 
-    const newDays = [...activeTaskList.timeBlockDays];
-    const firstDay = newDays[0];
-    firstDay.entries.push(task);
-    setActiveTaskList({ timeBlockDays: newDays });
+    const newEntries = [...activeTaskList.timeBlockEntries, task];
+
+    setActiveTaskList({ ...activeTaskList, timeBlockEntries: newEntries });
 
     setNewTaskText("");
   };
 
-  const TimeBlockCommon: Pick<TimeBlockUnitProps, "onDelete" | "onChange"> = {
-    onChange: (id: string, newEntry: TimeBlockEntry) => {},
-    onDelete: (id: string) => {},
-  };
+  const onEntryChange = useCallback(
+    (id: string, newEntry: TimeBlockEntry) =>
+      handleBulkTimeBlockChange([newEntry]),
+    [handleBulkTimeBlockChange]
+  );
+
+  const unscheduled = activeTaskList.timeBlockEntries.filter(
+    (c) => c.start === undefined
+  );
 
   return (
     <>
-      <H2>
-        <EditableText
-          onChange={handleTaskListNameChange}
-          value={activeTaskList.name}
+    {/* this will need to go up a level (stay with [id]) */}
+      <Provider initialValues={[[taskListAtom, initialTaskList]]}>
+        <H2>
+          <EditableText
+            onChange={handleTaskListNameChange}
+            value={activeTaskList.name}
+          />
+        </H2>
+
+        {isDirty && <Button text="save all" onClick={handleSaveTaskList} />}
+
+        <SettingsPopover
+          isColoredByPriority={colorContext.isColoredByPriority}
+          onChange={onChange}
+          dateToStr={dateToStr}
+          startTime={startTime}
+          endTime={endTime}
+          shouldScheduleAfterCurrent={shouldScheduleAfterCurrent}
+          setShouldScheduleAfterCurrent={setShouldScheduleAfterCurrent}
         />
-      </H2>
 
-      {isDirty && <Button text="save all" onClick={handleSaveTaskList} />}
-
-      <SettingsPopover
-        setActiveTaskList={setActiveTaskList}
-        isColoredByPriority={colorContext.isColoredByPriority}
-        onChange={onChange}
-        dateToStr={dateToStr}
-        startTime={startTime}
-        endTime={endTime}
-        shouldScheduleAfterCurrent={shouldScheduleAfterCurrent}
-        setShouldScheduleAfterCurrent={setShouldScheduleAfterCurrent}
-      />
-
-      <SearchContext.Provider
-        value={{ ...searchContext, onChange: setSearchContext }}
-      >
-        <TaskColorContext.Provider value={{ ...colorContext, onChange }}>
-          <>
-            <div style={{ margin: 30 }}>
-              <FormGroup inline>
-                <InputGroup
-                  value={newTaskText}
-                  onChange={(evt) => setNewTaskText(evt.target.value)}
-                  onKeyDown={(evt) => {
-                    if (evt.key === "Enter") {
-                      handleCreateTaskClick(!evt.metaKey);
-                    }
-                  }}
-                  style={{ width: 400 }}
-                />
-              </FormGroup>
-            </div>
-            <div>
-              <h3>unscheduled</h3>
-              <div style={{ display: "flex", flexWrap: "wrap" }}>
-                {activeTaskList.unscheduledEntries.map((block) => (
-                  <TimeBlockUnit
-                    {...TimeBlockCommon}
-                    key={block.id}
-                    block={block}
-                    onSchedule={handleBlockSchedule}
+        <SearchContext.Provider
+          value={{ ...searchContext, onChange: setSearchContext }}
+        >
+          <TaskColorContext.Provider value={{ ...colorContext, onChange }}>
+            <>
+              <div style={{ margin: 30 }}>
+                <FormGroup inline>
+                  <InputGroup
+                    value={newTaskText}
+                    onChange={(evt) => setNewTaskText(evt.target.value)}
+                    onKeyDown={(evt) => {
+                      if (evt.key === "Enter") {
+                        handleCreateTaskClick(!evt.metaKey);
+                      }
+                    }}
+                    style={{ width: 400 }}
                   />
-                ))}
+                </FormGroup>
               </div>
-            </div>
-            <div>
-              actions
-              <Button
-                text="add day"
-                onClick={() => {
-                  const newDays = activeTaskList.timeBlockDays.concat([
-                    {
-                      label: "New",
-                      entries: [],
-                    },
-                  ]);
-                  setActiveTaskList({ timeBlockDays: newDays });
-                }}
-              />
-            </div>
-            <div style={{ display: "flex" }}>
-              {activeTaskList.timeBlockDays.map((day, idx) => (
+              <div>
+                <h3>unscheduled</h3>
+                <div style={{ display: "flex", flexWrap: "wrap" }}>
+                  {unscheduled.map((block, idx) => (
+                    <TimeBlockUnit
+                      key={idx}
+                      onChange={onEntryChange}
+                      block={block}
+                      startTime={startTime}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              <div style={{ display: "flex" }}>
                 <TimeBlockDay
-                  key={idx}
-                  shouldShowLeftSidebar={idx === 0}
+                  shouldShowLeftSidebar={true}
                   dateStart={startTime}
                   dateEnd={endTime}
-                  defaultEntries={day.entries}
-                  onEntryChange={(entries) => handleNewTaskList(entries, idx)}
+                  onEntryChange={handleBulkTimeBlockChange}
                   shouldScheduleAfterCurrent={shouldScheduleAfterCurrent}
                   nowInRightUnits={nowInRightUnits}
                 />
-              ))}
-            </div>
-            <SearchOverlay />
-          </>
-        </TaskColorContext.Provider>
-      </SearchContext.Provider>
+              </div>
+              <SearchOverlay />
+            </>
+          </TaskColorContext.Provider>
+        </SearchContext.Provider>
+      </Provider>
     </>
   );
 }

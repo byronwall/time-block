@@ -19,8 +19,7 @@ export interface TaskList {
   id: string;
   name: string;
 
-  timeBlockDays: TimeBlockDay[];
-  unscheduledEntries: TimeBlockEntry[];
+  timeBlockEntries: TimeBlockEntry[];
 
   viewStart: string;
   viewEnd: string;
@@ -36,7 +35,6 @@ export function createDefaultTaskList(): TaskList {
     id: createUuid(),
     viewEnd: "17:00",
     viewStart: "08:00",
-    timeBlockDays: [],
-    unscheduledEntries: [],
+    timeBlockEntries: [],
   };
 }

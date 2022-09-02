@@ -1,5 +1,12 @@
 # Time Block changelog
 
+## 0.0.14 -- 2022-08-31 22:13:51
+
+- Rework the task saving so that they're flat and days are handled separately
+- Almost working again after removing the days and dealing with re-renders
+- Switch to `jotai` for state management - let's see what happens...
+  - Not sure this is any better... it works though
+
 ## 0.0.13 -- 2022-08-29 23:08:31
 
 - Ensure that `preventDefault` is used when editing a task - prevent `e` from being typed

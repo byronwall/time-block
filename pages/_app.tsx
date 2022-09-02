@@ -8,17 +8,20 @@ import "@blueprintjs/datetime/lib/css/blueprint-datetime.css";
 
 import Link from "next/link";
 import { H1, HotkeysProvider } from "@blueprintjs/core";
+import { Provider } from "jotai";
 
 function MyApp({ Component, pageProps }) {
   return (
-    <HotkeysProvider>
-      <div style={{ width: 800, margin: "auto", marginTop: 5 }}>
-        <Link href="/">
-          <H1 style={{ cursor: "pointer" }}>Time Block Schedule</H1>
-        </Link>
-        <Component {...pageProps} />
-      </div>
-    </HotkeysProvider>
+    <Provider>
+      <HotkeysProvider>
+        <div style={{ width: 800, margin: "auto", marginTop: 5 }}>
+          <Link href="/">
+            <H1 style={{ cursor: "pointer" }}>Time Block Schedule</H1>
+          </Link>
+          <Component {...pageProps} />
+        </div>
+      </HotkeysProvider>
+    </Provider>
   );
 }
 
