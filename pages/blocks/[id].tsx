@@ -157,7 +157,8 @@ export default function TimeBlockView(props: TimeBlockViewProps) {
   );
 
   const handleCreateTaskClick = async (isScheduled = true) => {
-    const newStartTime = isScheduled ? getFirstStartTime() : undefined;
+    // const newStartTime = isScheduled ? getFirstStartTime() : undefined;
+    const newStartTime = isScheduled ? undefined : undefined;
 
     // add new task to state
     const task: TimeBlockEntry = {
@@ -187,7 +188,7 @@ export default function TimeBlockView(props: TimeBlockViewProps) {
 
   return (
     <>
-    {/* this will need to go up a level (stay with [id]) */}
+      {/* this will need to go up a level (stay with [id]) */}
       <Provider initialValues={[[taskListAtom, initialTaskList]]}>
         <H2>
           <EditableText
