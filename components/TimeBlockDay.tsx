@@ -7,11 +7,10 @@ import {
   utcFormat,
   utcParse,
 } from "d3";
-import { useAtom } from "jotai";
-import React, { useCallback, useMemo, useRef, useState } from "react";
+import React, { useMemo, useRef, useState } from "react";
 
 import { TimeBlockEntry } from "../model/model";
-import { timeBlockEntriesAtom } from "../pages/blocks/[id]";
+import { useTaskStore } from "../model/store";
 import { getTImeBlocksWithoutOverlap } from "./helpers";
 import { TimeBlockSidebarTicks } from "./TimeBlockSidebarTicks";
 import { TimeBlockUnit } from "./TimeBlockUnit";
@@ -44,7 +43,8 @@ export function TimeBlockDay(props: TimeBlockDayProps) {
     shouldShowLeftSidebar,
   } = props;
 
-  const [timeBlocks, setTimeBlocks] = useAtom(timeBlockEntriesAtom);
+  const timeBlocks = useTaskStore((state) => state.taskList.timeBlockEntries);
+  const setTimeBlock = useTaskStore((state) => state.updateTimeBlockEntry);
 
   // track the id which is dragging in state
   const [dragId, setDragId] = useState("");
@@ -98,48 +98,42 @@ export function TimeBlockDay(props: TimeBlockDayProps) {
 
     // update based on location
     // update start time
-    const newTimeBlocks = timeBlocks.map((block) => {
-      const newBLock = { ...block };
-      if (newBLock.id === dragId) {
-        let bounds = parent.getBoundingClientRect();
 
-        const dynamicDragStartTime = hourScale.invert(dragStart);
+    const ogBlock = timeBlocks.find((block) => block.id === dragId);
+    if (ogBlock === undefined) return;
 
-        let y = evt.clientY - bounds.top;
+    const newBLock = { ...ogBlock };
 
-        const deltaTimeMs =
-          hourScale.invert(evt.clientY).getTime() -
-          dynamicDragStartTime.getTime();
+    let bounds = parent.getBoundingClientRect();
 
-        const newTime = timeMinute.every(30).round(hourScale.invert(y));
+    const dynamicDragStartTime = hourScale.invert(dragStart);
 
-        if (dragLocation === "top") {
-          // change the start and reduce duration
-          newBLock.start = newTime.getTime();
-          newBLock.duration =
-            newBLock.duration - (newTime.getTime() - block.start) / 1000;
-        }
-        if (dragLocation === "bottom") {
-          // get duration in seconds
-          const duration = (newTime.getTime() - block.start) / 1000;
-          newBLock.duration = duration;
-        }
+    let y = evt.clientY - bounds.top;
 
-        if (dragLocation === "all") {
-          // just move the start - same duration
-          const newTimeWithOffset = new Date(dragStartTime + deltaTimeMs);
+    const deltaTimeMs =
+      hourScale.invert(evt.clientY).getTime() - dynamicDragStartTime.getTime();
 
-          newBLock.start = timeMinute
-            .every(30)
-            .round(newTimeWithOffset)
-            .getTime();
-        }
-      }
+    const newTime = timeMinute.every(30).round(hourScale.invert(y));
 
-      return newBLock;
-    });
+    if (dragLocation === "top") {
+      // change the start and reduce duration
+      newBLock.start = newTime.getTime();
+      newBLock.duration =
+        newBLock.duration - (newTime.getTime() - ogBlock.start) / 1000;
+    }
+    if (dragLocation === "bottom") {
+      // get duration in seconds
+      const duration = (newTime.getTime() - ogBlock.start) / 1000;
+      newBLock.duration = duration;
+    }
 
-    setTimeBlocks(newTimeBlocks);
+    if (dragLocation === "all") {
+      // just move the start - same duration
+      const newTimeWithOffset = new Date(dragStartTime + deltaTimeMs);
+
+      newBLock.start = timeMinute.every(30).round(newTimeWithOffset).getTime();
+    }
+    setTimeBlock(newBLock);
   };
   // map out the width and position of each item based on overlaps
 
@@ -160,37 +154,14 @@ export function TimeBlockDay(props: TimeBlockDayProps) {
     setDragStart(clientYStart);
   };
 
-  const handleBlockChange = useCallback(
-    (id: string, newBLock: TimeBlockEntry) => {
-      const newTimeBlocks = timeBlocks.map((block) => {
-        if (block.id === id) {
-          return newBLock;
-        }
-        return block;
-      });
-
-      setTimeBlocks(newTimeBlocks);
-    },
-    [timeBlocks, setTimeBlocks]
-  );
-
-  const handleBlockDelete = useCallback(
-    (id: string) => {
-      const newTimeBlocks = timeBlocks.filter((block) => block.id !== id);
-      setTimeBlocks(newTimeBlocks);
-    },
-    [timeBlocks, setTimeBlocks]
-  );
-
-  const TimeBlockCommon = {
-    onChange: handleBlockChange,
-    onDelete: handleBlockDelete,
-  };
-
   // this is messy - the start/end are UTC but we want to display local time
   const nowFormatted = localFormatter(new Date());
   const nowParsed = parser(nowFormatted);
   const curTimeTop = hourScale(nowParsed);
+
+  const bulkUpdate = useTaskStore(
+    (state) => state.updateTimeBlockEntryPartialBulk
+  );
 
   const hotkeys = useMemo(
     () => [
@@ -210,16 +181,16 @@ export function TimeBlockDay(props: TimeBlockDayProps) {
             schedStartTime
           );
 
-          onEntryChange(newEntries);
+          bulkUpdate(newEntries);
         },
       },
     ],
     [
       timeBlocks,
-      onEntryChange,
       shouldScheduleAfterCurrent,
       nowInRightUnits,
       dateStart,
+      bulkUpdate,
     ]
   );
 
@@ -258,7 +229,6 @@ export function TimeBlockDay(props: TimeBlockDayProps) {
 
           {scheduledTasks.map((block) => (
             <TimeBlockUnit
-              {...TimeBlockCommon}
               key={block.id}
               hourScale={hourScale}
               block={block}

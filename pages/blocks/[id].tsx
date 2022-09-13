@@ -8,11 +8,8 @@ import {
   useHotkeys,
 } from "@blueprintjs/core";
 import { scaleOrdinal, timeFormat, utcFormat, utcParse } from "d3";
-import { atom, Provider, useAtom } from "jotai";
-import { focusAtom } from "jotai/optics";
-import { splitAtom, useHydrateAtoms } from "jotai/utils";
 import { isEqual } from "lodash-es";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSetState } from "react-use";
 
 import { SearchContext } from "../../components/SearchContext";
@@ -24,11 +21,8 @@ import {
 } from "../../components/TaskColorContext";
 import { TimeBlockDay } from "../../components/TimeBlockDay";
 import { TimeBlockUnit } from "../../components/TimeBlockUnit";
-import {
-  createDefaultTaskList,
-  TaskList,
-  TimeBlockEntry,
-} from "../../model/model";
+import { TaskList, TimeBlockEntry } from "../../model/model";
+import { useTaskStore } from "../../model/store";
 import { findOneTaskList } from "../../util/db";
 import { createUuid } from "../../util/helpers";
 import { quickPost } from "../../util/quickPost";
@@ -42,23 +36,18 @@ const parser = utcParse("%H:%M");
 const dateToStr = utcFormat("%H:%M");
 const dateToStrLocal = timeFormat("%H:%M");
 
-export const taskListAtom = atom(createDefaultTaskList());
-
-// TODO: attempt to add the filter here for unscheduled items
-export const timeBlockEntriesAtom = focusAtom(taskListAtom, (c) =>
-  c.prop("timeBlockEntries")
-);
-
-export const timeBlockEntriesSplitAtom = splitAtom(timeBlockEntriesAtom);
-
-// TODO: this needs to go down one level so initial props can be passed in
 export default function TimeBlockView(props: TimeBlockViewProps) {
   const { initialTaskList } = props;
 
-  console.log("render main view");
+  const activeTaskList = useTaskStore((state) => state.taskList);
+  const setActiveTaskList = useTaskStore((state) => state.setTaskList);
 
-  useHydrateAtoms([[taskListAtom, initialTaskList]]);
-  const [activeTaskList, setActiveTaskList] = useAtom(taskListAtom);
+  // this is used to update the store based on the server loaded props
+  useEffect(() => {
+    setActiveTaskList(initialTaskList);
+  }, []);
+
+  console.log("render main view");
 
   const isDirty = !isEqual(activeTaskList, initialTaskList);
 
@@ -189,74 +178,71 @@ export default function TimeBlockView(props: TimeBlockViewProps) {
   return (
     <>
       {/* this will need to go up a level (stay with [id]) */}
-      <Provider initialValues={[[taskListAtom, initialTaskList]]}>
-        <H2>
-          <EditableText
-            onChange={handleTaskListNameChange}
-            value={activeTaskList.name}
-          />
-        </H2>
-
-        {isDirty && <Button text="save all" onClick={handleSaveTaskList} />}
-
-        <SettingsPopover
-          isColoredByPriority={colorContext.isColoredByPriority}
-          onChange={onChange}
-          dateToStr={dateToStr}
-          startTime={startTime}
-          endTime={endTime}
-          shouldScheduleAfterCurrent={shouldScheduleAfterCurrent}
-          setShouldScheduleAfterCurrent={setShouldScheduleAfterCurrent}
+      <H2>
+        <EditableText
+          onChange={handleTaskListNameChange}
+          value={activeTaskList.name}
         />
+      </H2>
 
-        <SearchContext.Provider
-          value={{ ...searchContext, onChange: setSearchContext }}
-        >
-          <TaskColorContext.Provider value={{ ...colorContext, onChange }}>
-            <>
-              <div style={{ margin: 30 }}>
-                <FormGroup inline>
-                  <InputGroup
-                    value={newTaskText}
-                    onChange={(evt) => setNewTaskText(evt.target.value)}
-                    onKeyDown={(evt) => {
-                      if (evt.key === "Enter") {
-                        handleCreateTaskClick(!evt.metaKey);
-                      }
-                    }}
-                    style={{ width: 400 }}
-                  />
-                </FormGroup>
-              </div>
-              <div>
-                <h3>unscheduled</h3>
-                <div style={{ display: "flex", flexWrap: "wrap" }}>
-                  {unscheduled.map((block, idx) => (
-                    <TimeBlockUnit
-                      key={idx}
-                      onChange={onEntryChange}
-                      block={block}
-                      startTime={startTime}
-                    />
-                  ))}
-                </div>
-              </div>
+      {isDirty && <Button text="save all" onClick={handleSaveTaskList} />}
 
-              <div style={{ display: "flex" }}>
-                <TimeBlockDay
-                  shouldShowLeftSidebar={true}
-                  dateStart={startTime}
-                  dateEnd={endTime}
-                  onEntryChange={handleBulkTimeBlockChange}
-                  shouldScheduleAfterCurrent={shouldScheduleAfterCurrent}
-                  nowInRightUnits={nowInRightUnits}
+      <SettingsPopover
+        isColoredByPriority={colorContext.isColoredByPriority}
+        onChange={onChange}
+        dateToStr={dateToStr}
+        startTime={startTime}
+        endTime={endTime}
+        shouldScheduleAfterCurrent={shouldScheduleAfterCurrent}
+        setShouldScheduleAfterCurrent={setShouldScheduleAfterCurrent}
+      />
+
+      <SearchContext.Provider
+        value={{ ...searchContext, onChange: setSearchContext }}
+      >
+        <TaskColorContext.Provider value={{ ...colorContext, onChange }}>
+          <>
+            <div style={{ margin: 30 }}>
+              <FormGroup inline>
+                <InputGroup
+                  value={newTaskText}
+                  onChange={(evt) => setNewTaskText(evt.target.value)}
+                  onKeyDown={(evt) => {
+                    if (evt.key === "Enter") {
+                      handleCreateTaskClick(!evt.metaKey);
+                    }
+                  }}
+                  style={{ width: 400 }}
                 />
+              </FormGroup>
+            </div>
+            <div>
+              <h3>unscheduled</h3>
+              <div style={{ display: "flex", flexWrap: "wrap" }}>
+                {unscheduled.map((block, idx) => (
+                  <TimeBlockUnit
+                    key={idx}
+                    block={block}
+                    startTime={startTime}
+                  />
+                ))}
               </div>
-              <SearchOverlay />
-            </>
-          </TaskColorContext.Provider>
-        </SearchContext.Provider>
-      </Provider>
+            </div>
+
+            <div style={{ display: "flex" }}>
+              <TimeBlockDay
+                shouldShowLeftSidebar={true}
+                dateStart={startTime}
+                dateEnd={endTime}
+                onEntryChange={handleBulkTimeBlockChange}
+                shouldScheduleAfterCurrent={shouldScheduleAfterCurrent}
+                nowInRightUnits={nowInRightUnits}
+              />
+            </div>
+            <SearchOverlay />
+          </>
+        </TaskColorContext.Provider>
+      </SearchContext.Provider>
     </>
   );
 }

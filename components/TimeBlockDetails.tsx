@@ -2,23 +2,21 @@ import { Button, Card, EditableText, Switch } from "@blueprintjs/core";
 import { useContext, useState } from "react";
 
 import { TimeBlockEntry } from "../model/model";
+import { useTaskStore } from "../model/store";
 import { handleBooleanChange } from "./helpers";
 import { TaskColorContext } from "./TaskColorContext";
 
 interface TimeBlockDetailsProps {
   block: TimeBlockEntry;
-
-  onChange(id: string, newEntry: TimeBlockEntry): void;
 }
 
 export function TimeBlockDetails(props: TimeBlockDetailsProps) {
-  const { block, onChange } = props;
+  const { block } = props;
+
+  const xxxPartial = useTaskStore((store) => store.updateTimeBlockEntryPartial);
 
   const handleChange = (data: Partial<TimeBlockEntry>) => {
-    onChange(block.id, {
-      ...block,
-      ...data,
-    });
+    xxxPartial(block.id, data);
   };
 
   const { description, start } = block;

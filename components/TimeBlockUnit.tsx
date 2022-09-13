@@ -1,5 +1,4 @@
 import { HotkeyConfig, useHotkeys } from "@blueprintjs/core";
-import { Atom, PrimitiveAtom, useAtom } from "jotai";
 import {
   CSSProperties,
   useCallback,
@@ -9,7 +8,7 @@ import {
 } from "react";
 
 import { TimeBlockEntry } from "../model/model";
-import { timeBlockEntriesAtom } from "../pages/blocks/[id]";
+import { useTaskStore } from "../model/store";
 import { getTextColor } from "./helpers";
 import { SearchContext } from "./SearchContext";
 import { TaskColorContext } from "./TaskColorContext";
@@ -19,8 +18,6 @@ import { DragLoc } from "./TimeBlockDay";
 
 export interface TimeBlockUnitProps {
   onStartDrag?: (id: string, location: DragLoc, clientY: number) => void;
-
-  onChange(id: string, newEntry: TimeBlockEntry): void;
 
   // onDelete?(): void;
 
@@ -37,9 +34,6 @@ export interface TimeBlockUnitProps {
 export function TimeBlockUnit(props: TimeBlockUnitProps) {
   const {
     onStartDrag,
-    // onDelete,
-    onChange,
-    // blockAtom,
     block,
     hourScale,
     column,
@@ -47,7 +41,9 @@ export function TimeBlockUnit(props: TimeBlockUnitProps) {
     startTime,
   } = props;
 
-  const [timeBlockEntries, setem] = useAtom(timeBlockEntriesAtom);
+  const timeBlockEntries = useTaskStore(
+    (state) => state.taskList.timeBlockEntries
+  );
 
   const searchContext = useContext(SearchContext);
   const isLiveSearch = searchContext.isSearchOpen && searchContext.searchText;
@@ -64,8 +60,7 @@ export function TimeBlockUnit(props: TimeBlockUnitProps) {
 
   const acceptEditText = () => {
     setIsEdit(false);
-    onChange(block.id, {
-      ...block,
+    onChangePartial(block.id, {
       description: editText,
     });
   };
@@ -107,19 +102,15 @@ export function TimeBlockUnit(props: TimeBlockUnitProps) {
 
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
-  const onChangePartial = useCallback(
-    (newEntry: Partial<TimeBlockEntry>) => {
-      onChange(block.id, {
-        ...block,
-        ...newEntry,
-      });
-    },
-    [block, onChange]
+  const onChangePartial = useTaskStore(
+    (store) => store.updateTimeBlockEntryPartial
   );
 
+  const xxxDel = useTaskStore((store) => store.removeTimeBlockEntry);
+
   const handleDelete = useCallback(() => {
-    setem(timeBlockEntries.filter((e) => e.id !== block.id));
-  }, [timeBlockEntries, block.id, setem]);
+    xxxDel(block.id);
+  }, [block.id, xxxDel]);
 
   const getFirstStartTime = useCallback(
     (entriesFirstDay: TimeBlockEntry[] = []) => {
@@ -138,29 +129,14 @@ export function TimeBlockUnit(props: TimeBlockUnitProps) {
 
   const handleBlockSchedule = useCallback(() => {
     // remove from unscheduled
-    const taskToSched = timeBlockEntries.find((t) => t.id === block.id);
 
-    if (!taskToSched) {
-      return;
-    }
-
-    taskToSched.start = getFirstStartTime(timeBlockEntries);
-
-    setem([...timeBlockEntries]);
-  }, [block.id, getFirstStartTime, setem, timeBlockEntries]);
+    onChangePartial(block.id, { start: getFirstStartTime(timeBlockEntries) });
+  }, [block.id, getFirstStartTime, onChangePartial, timeBlockEntries]);
 
   const handleBlockUnschedule = useCallback(() => {
     // remove from unscheduled
-    const taskToSched = timeBlockEntries.find((t) => t.id === block.id);
-
-    if (!taskToSched) {
-      return;
-    }
-
-    taskToSched.start = undefined;
-
-    setem([...timeBlockEntries]);
-  }, [block.id, setem, timeBlockEntries]);
+    onChangePartial(block.id, { start: undefined });
+  }, [block.id, onChangePartial]);
 
   // set up keyboard shortcuts
   const hotkeys = useMemo<HotkeyConfig[]>(
@@ -205,7 +181,7 @@ export function TimeBlockUnit(props: TimeBlockUnitProps) {
         global: true,
         group: "hover on block",
         disabled: !isMouseInside,
-        onKeyDown: () => onChangePartial({ priority: 1 }),
+        onKeyDown: () => onChangePartial(block.id, { priority: 1 }),
       },
       {
         combo: "2",
@@ -213,7 +189,7 @@ export function TimeBlockUnit(props: TimeBlockUnitProps) {
         global: true,
         group: "hover on block",
         disabled: !isMouseInside,
-        onKeyDown: () => onChangePartial({ priority: 2 }),
+        onKeyDown: () => onChangePartial(block.id, { priority: 2 }),
       },
       {
         combo: "3",
@@ -221,7 +197,7 @@ export function TimeBlockUnit(props: TimeBlockUnitProps) {
         global: true,
         group: "hover on block",
         disabled: !isMouseInside,
-        onKeyDown: () => onChangePartial({ priority: 3 }),
+        onKeyDown: () => onChangePartial(block.id, { priority: 3 }),
       },
 
       {
@@ -230,7 +206,7 @@ export function TimeBlockUnit(props: TimeBlockUnitProps) {
         global: true,
         group: "hover on block",
         disabled: !isMouseInside,
-        onKeyDown: () => onChangePartial({ priority: 4 }),
+        onKeyDown: () => onChangePartial(block.id, { priority: 4 }),
       },
       {
         combo: "5",
@@ -238,7 +214,7 @@ export function TimeBlockUnit(props: TimeBlockUnitProps) {
         global: true,
         group: "hover on block",
         disabled: !isMouseInside,
-        onKeyDown: () => onChangePartial({ priority: 5 }),
+        onKeyDown: () => onChangePartial(block.id, { priority: 5 }),
       },
       {
         combo: "c",
@@ -246,7 +222,8 @@ export function TimeBlockUnit(props: TimeBlockUnitProps) {
         global: true,
         group: "hover on block",
         disabled: !isMouseInside,
-        onKeyDown: () => onChangePartial({ isComplete: !block.isComplete }),
+        onKeyDown: () =>
+          onChangePartial(block.id, { isComplete: !block.isComplete }),
       },
       {
         combo: "f",
@@ -254,7 +231,8 @@ export function TimeBlockUnit(props: TimeBlockUnitProps) {
         global: true,
         group: "hover on block",
         disabled: !isMouseInside,
-        onKeyDown: () => onChangePartial({ isFrozen: !block.isFrozen }),
+        onKeyDown: () =>
+          onChangePartial(block.id, { isFrozen: !block.isFrozen }),
       },
     ],
     [
@@ -268,6 +246,7 @@ export function TimeBlockUnit(props: TimeBlockUnitProps) {
       handleDelete,
       handleBlockSchedule,
       handleBlockUnschedule,
+      block.id,
     ]
   );
 
@@ -327,7 +306,6 @@ export function TimeBlockUnit(props: TimeBlockUnitProps) {
           acceptEditText={acceptEditText}
         />
         <TaskUnitDetailsPopover
-          onChange={onChange}
           block={block}
           isDetailsOpen={isDetailsOpen}
           setIsDetailsOpen={setIsDetailsOpen}

@@ -1,8 +1,7 @@
 import { Button, Card, FormGroup, InputGroup, Switch } from "@blueprintjs/core";
 import { Popover2 } from "@blueprintjs/popover2";
-import { taskListAtom } from "../pages/blocks/[id]";
+import { useTaskStore } from "../model/store";
 import { handleBooleanChange } from "./helpers";
-import { useAtom } from "jotai";
 
 type SettingsPopoverProps = {
   isColoredByPriority: boolean;
@@ -25,7 +24,7 @@ export function SettingsPopover(props: SettingsPopoverProps) {
     endTime,
   } = props;
 
-  const [activeTaskList, setActiveTaskList] = useAtom(taskListAtom);
+  const updateTaskList = useTaskStore((state) => state.updateTaskListPartial);
 
   return (
     <Popover2
@@ -58,8 +57,7 @@ export function SettingsPopover(props: SettingsPopoverProps) {
               <InputGroup
                 defaultValue={dateToStr(startTime)}
                 onBlur={(e) => {
-                  setActiveTaskList({
-                    ...activeTaskList,
+                  updateTaskList({
                     viewStart: e.target.value,
                   });
                 }}
@@ -71,8 +69,7 @@ export function SettingsPopover(props: SettingsPopoverProps) {
               <InputGroup
                 defaultValue={dateToStr(endTime)}
                 onBlur={(e) => {
-                  setActiveTaskList({
-                    ...activeTaskList,
+                  updateTaskList({
                     viewEnd: e.target.value,
                   });
                 }}

@@ -7,18 +7,17 @@ interface TaskUnitDetailsPopoverProps {
   isDetailsOpen: boolean;
   setIsDetailsOpen: (arg0: boolean) => void;
   block: TimeBlockEntry;
-  onChange: (id: string, newEntry: TimeBlockEntry) => void;
 }
 
 export function TaskUnitDetailsPopover(props: TaskUnitDetailsPopoverProps) {
-  const { isDetailsOpen, setIsDetailsOpen, block, onChange } = props;
+  const { isDetailsOpen, setIsDetailsOpen, block } = props;
 
   return (
     <div>
       <Popover2
         isOpen={isDetailsOpen}
         onClose={() => setIsDetailsOpen(false)}
-        content={<TimeBlockDetails block={block} onChange={onChange} />}
+        content={<TimeBlockDetails block={block} />}
         position="right"
       >
         <Button

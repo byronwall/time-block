@@ -1,4 +1,5 @@
 import { TimeBlockEntry } from "../model/model";
+import { TimeBlockBulkPartial } from "../model/store";
 
 /** Event handler that exposes the target element's value as a boolean. */
 export function handleBooleanChange(handler: (checked: boolean) => void) {
@@ -38,16 +39,16 @@ function hexToRgb(hex: string) {
 export function getTImeBlocksWithoutOverlap(
   timeBlocks: TimeBlockEntry[],
   forcedStart: number
-) {
+): TimeBlockBulkPartial {
   // function that modifies an array of time blocks to occur end to end without overlap
-  const newTimeBlocks = [...timeBlocks];
 
-  const goodBlocks = newTimeBlocks
+  const result: TimeBlockBulkPartial = {};
+
+  const goodBlocks = timeBlocks
     .filter((c) => c.start !== undefined)
-
     .sort((a, b) => a.start - b.start);
 
-  const frozenBlocks = newTimeBlocks.filter(
+  const frozenBlocks = timeBlocks.filter(
     (c) => c.isFrozen && c.start !== undefined
   );
 
@@ -59,15 +60,17 @@ export function getTImeBlocksWithoutOverlap(
 
     if (idx === 0) {
       if (forcedStart !== undefined) {
-        block.start = forcedStart;
+        result[block.id] = { start: forcedStart };
       }
       return;
     }
     let prevBlock = goodBlocks[idx - 1];
 
+    const prevStart = result[prevBlock.id]?.start ?? prevBlock.start;
+
     const possibleStart = Math.max(
       forcedStart,
-      prevBlock.start + prevBlock.duration * 1000
+      prevStart + prevBlock.duration * 1000
     );
 
     const possibleEnd = possibleStart + block.duration * 1000;
@@ -85,8 +88,8 @@ export function getTImeBlocksWithoutOverlap(
         ? frozenConflicts[0].start + frozenConflicts[0].duration * 1000
         : possibleStart;
 
-    block.start = actualStart;
+    result[block.id] = { start: actualStart };
   });
 
-  return newTimeBlocks;
+  return result;
 }

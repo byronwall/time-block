@@ -1,5 +1,11 @@
 # Time Block changelog
 
+## 0.0.15 -- 2022-09-12 23:13:43
+
+- Remove `jotai`; move to `zustand` + `immer` for global store
+  - This makes it much easier to update things where needed
+- Rework various components to use the new global store
+
 ## 0.0.14 -- 2022-08-31 22:13:51
 
 - Rework the task saving so that they're flat and days are handled separately
