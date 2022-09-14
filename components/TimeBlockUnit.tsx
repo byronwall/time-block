@@ -1,4 +1,3 @@
-import { HotkeyConfig, useHotkeys } from "@blueprintjs/core";
 import {
   CSSProperties,
   useCallback,
@@ -8,7 +7,7 @@ import {
 } from "react";
 
 import { TimeBlockEntry } from "../model/model";
-import { useTaskStore } from "../model/store";
+import { useTaskStore } from "../model/TaskStore";
 import { getTextColor } from "./helpers";
 import { SearchContext } from "./SearchContext";
 import { TaskColorContext } from "./TaskColorContext";
@@ -28,22 +27,10 @@ export interface TimeBlockUnitProps {
   column?: number;
 
   shouldColorDefault?: boolean;
-  startTime: Date;
 }
 
 export function TimeBlockUnit(props: TimeBlockUnitProps) {
-  const {
-    onStartDrag,
-    block,
-    hourScale,
-    column,
-    shouldColorDefault,
-    startTime,
-  } = props;
-
-  const timeBlockEntries = useTaskStore(
-    (state) => state.taskList.timeBlockEntries
-  );
+  const { onStartDrag, block, hourScale, column, shouldColorDefault } = props;
 
   const searchContext = useContext(SearchContext);
   const isLiveSearch = searchContext.isSearchOpen && searchContext.searchText;
@@ -98,159 +85,14 @@ export function TimeBlockUnit(props: TimeBlockUnitProps) {
 
   const textColor = getTextColor(backgroundColor);
 
-  const [isMouseInside, setIsMouseInside] = useState(false);
+  const detailOptions = useTaskStore((state) => state.detailOptions);
+  const setMouseOverId = useTaskStore((state) => state.setMouseOverId);
 
-  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const isDetailsOpen = detailOptions.isOpen && detailOptions.id === block.id;
 
   const onChangePartial = useTaskStore(
     (store) => store.updateTimeBlockEntryPartial
   );
-
-  const xxxDel = useTaskStore((store) => store.removeTimeBlockEntry);
-
-  const handleDelete = useCallback(() => {
-    xxxDel(block.id);
-  }, [block.id, xxxDel]);
-
-  const getFirstStartTime = useCallback(
-    (entriesFirstDay: TimeBlockEntry[] = []) => {
-      const maxEndTime = entriesFirstDay.reduce((max, block) => {
-        if (block.start === undefined) {
-          return max;
-        }
-
-        return Math.max(max, block.start + block.duration * 1000);
-      }, startTime.getTime());
-
-      return maxEndTime;
-    },
-    [startTime]
-  );
-
-  const handleBlockSchedule = useCallback(() => {
-    // remove from unscheduled
-
-    onChangePartial(block.id, { start: getFirstStartTime(timeBlockEntries) });
-  }, [block.id, getFirstStartTime, onChangePartial, timeBlockEntries]);
-
-  const handleBlockUnschedule = useCallback(() => {
-    // remove from unscheduled
-    onChangePartial(block.id, { start: undefined });
-  }, [block.id, onChangePartial]);
-
-  // set up keyboard shortcuts
-  const hotkeys = useMemo<HotkeyConfig[]>(
-    () => [
-      {
-        combo: "d",
-        label: "details",
-        global: true,
-        group: "hover on block",
-        disabled: !isMouseInside,
-        onKeyDown: () => setIsDetailsOpen(!isDetailsOpen),
-      },
-      {
-        combo: "e",
-        label: "edit",
-        preventDefault: true,
-        global: true,
-        group: "hover on block",
-        disabled: !isMouseInside,
-        onKeyDown: () => setIsEdit(!isEdit),
-      },
-      {
-        combo: "x",
-        label: "delete",
-        global: true,
-        group: "hover on block",
-        disabled: !isMouseInside,
-        onKeyDown: () => handleDelete(),
-      },
-      {
-        combo: "s",
-        label: "schedule",
-        global: true,
-        group: "hover on block",
-        disabled: !isMouseInside,
-        onKeyDown: () =>
-          isScheduled ? handleBlockUnschedule() : handleBlockSchedule(),
-      },
-      {
-        combo: "1",
-        label: "set priority 1",
-        global: true,
-        group: "hover on block",
-        disabled: !isMouseInside,
-        onKeyDown: () => onChangePartial(block.id, { priority: 1 }),
-      },
-      {
-        combo: "2",
-        label: "set priority 2",
-        global: true,
-        group: "hover on block",
-        disabled: !isMouseInside,
-        onKeyDown: () => onChangePartial(block.id, { priority: 2 }),
-      },
-      {
-        combo: "3",
-        label: "set priority 3",
-        global: true,
-        group: "hover on block",
-        disabled: !isMouseInside,
-        onKeyDown: () => onChangePartial(block.id, { priority: 3 }),
-      },
-
-      {
-        combo: "4",
-        label: "set priority 4",
-        global: true,
-        group: "hover on block",
-        disabled: !isMouseInside,
-        onKeyDown: () => onChangePartial(block.id, { priority: 4 }),
-      },
-      {
-        combo: "5",
-        label: "set priority 5",
-        global: true,
-        group: "hover on block",
-        disabled: !isMouseInside,
-        onKeyDown: () => onChangePartial(block.id, { priority: 5 }),
-      },
-      {
-        combo: "c",
-        label: "complete",
-        global: true,
-        group: "hover on block",
-        disabled: !isMouseInside,
-        onKeyDown: () =>
-          onChangePartial(block.id, { isComplete: !block.isComplete }),
-      },
-      {
-        combo: "f",
-        label: "freeze",
-        global: true,
-        group: "hover on block",
-        disabled: !isMouseInside,
-        onKeyDown: () =>
-          onChangePartial(block.id, { isFrozen: !block.isFrozen }),
-      },
-    ],
-    [
-      isDetailsOpen,
-      isMouseInside,
-      isEdit,
-      isScheduled,
-      block.isComplete,
-      block.isFrozen,
-      onChangePartial,
-      handleDelete,
-      handleBlockSchedule,
-      handleBlockUnschedule,
-      block.id,
-    ]
-  );
-
-  useHotkeys(hotkeys);
 
   return (
     <div
@@ -264,8 +106,8 @@ export function TimeBlockUnit(props: TimeBlockUnitProps) {
         color: textColor,
         padding: 3,
       }}
-      onMouseEnter={() => setIsMouseInside(true)}
-      onMouseLeave={() => setIsMouseInside(false)}
+      onMouseOver={() => setMouseOverId(block.id)}
+      onMouseOut={() => setMouseOverId(undefined)}
     >
       {isScheduled && (
         <>
@@ -305,11 +147,7 @@ export function TimeBlockUnit(props: TimeBlockUnitProps) {
           setEditText={setEditText}
           acceptEditText={acceptEditText}
         />
-        <TaskUnitDetailsPopover
-          block={block}
-          isDetailsOpen={isDetailsOpen}
-          setIsDetailsOpen={setIsDetailsOpen}
-        />
+        <TaskUnitDetailsPopover block={block} isDetailsOpen={isDetailsOpen} />
       </div>
     </div>
   );

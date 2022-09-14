@@ -1,29 +1,32 @@
 import { Button } from "@blueprintjs/core";
 import { Popover2 } from "@blueprintjs/popover2";
 import { TimeBlockEntry } from "../model/model";
+import { useTaskStore } from "../model/TaskStore";
 import { TimeBlockDetails } from "./TimeBlockDetails";
 
 interface TaskUnitDetailsPopoverProps {
   isDetailsOpen: boolean;
-  setIsDetailsOpen: (arg0: boolean) => void;
   block: TimeBlockEntry;
 }
 
 export function TaskUnitDetailsPopover(props: TaskUnitDetailsPopoverProps) {
-  const { isDetailsOpen, setIsDetailsOpen, block } = props;
+  const { isDetailsOpen, block } = props;
+
+  const onCloseDetails = useTaskStore((state) => state.onCloseDetails);
+  const onOpenDetails = useTaskStore((state) => state.toggleDetailShortcut);
 
   return (
     <div>
       <Popover2
         isOpen={isDetailsOpen}
-        onClose={() => setIsDetailsOpen(false)}
+        onClose={onCloseDetails}
         content={<TimeBlockDetails block={block} />}
         position="right"
       >
         <Button
           icon="chevron-down"
           minimal
-          onClick={() => setIsDetailsOpen(true)}
+          onClick={() => onOpenDetails(true)}
         />
       </Popover2>
     </div>

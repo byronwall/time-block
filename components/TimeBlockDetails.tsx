@@ -2,7 +2,7 @@ import { Button, Card, EditableText, Switch } from "@blueprintjs/core";
 import { useContext, useState } from "react";
 
 import { TimeBlockEntry } from "../model/model";
-import { useTaskStore } from "../model/store";
+import { useTaskStore } from "../model/TaskStore";
 import { handleBooleanChange } from "./helpers";
 import { TaskColorContext } from "./TaskColorContext";
 

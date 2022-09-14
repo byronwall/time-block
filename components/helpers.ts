@@ -1,5 +1,5 @@
 import { TimeBlockEntry } from "../model/model";
-import { TimeBlockBulkPartial } from "../model/store";
+import { TimeBlockBulkPartial } from "../model/TaskStore";
 
 /** Event handler that exposes the target element's value as a boolean. */
 export function handleBooleanChange(handler: (checked: boolean) => void) {

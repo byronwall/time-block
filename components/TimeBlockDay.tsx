@@ -9,8 +9,10 @@ import {
 } from "d3";
 import React, { useMemo, useRef, useState } from "react";
 
+import { useWhatChanged } from "@simbathesailor/use-what-changed";
+
 import { TimeBlockEntry } from "../model/model";
-import { useTaskStore } from "../model/store";
+import { useTaskStore } from "../model/TaskStore";
 import { getTImeBlocksWithoutOverlap } from "./helpers";
 import { TimeBlockSidebarTicks } from "./TimeBlockSidebarTicks";
 import { TimeBlockUnit } from "./TimeBlockUnit";
@@ -23,8 +25,6 @@ interface TimeBlockDayProps {
   nowInRightUnits: Date;
 
   shouldShowLeftSidebar: boolean;
-
-  onEntryChange(entries: TimeBlockEntry[]): void;
 }
 
 export type DragLoc = "top" | "bottom" | "all";
@@ -36,8 +36,6 @@ export function TimeBlockDay(props: TimeBlockDayProps) {
   const {
     dateStart,
     dateEnd,
-
-    onEntryChange,
     nowInRightUnits,
     shouldScheduleAfterCurrent,
     shouldShowLeftSidebar,
@@ -234,7 +232,6 @@ export function TimeBlockDay(props: TimeBlockDayProps) {
               block={block}
               column={colHash[block.id]}
               onStartDrag={handleStartDrag}
-              startTime={dateStart}
               shouldColorDefault
             />
           ))}

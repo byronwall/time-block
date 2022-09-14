@@ -1,5 +1,13 @@
 # Time Block changelog
 
+## 0.0.16 -- 2022-09-13 23:43:52
+
+- Rework the hover and hotkey dynamics to go through the common store
+  - This makes it much easier to interact with the "right" object
+  - Still need to wire up a couple more
+- TODO: need to sort out the rebalance code again...
+- TODO: need to sort out mouse events on repaint
+
 ## 0.0.15 -- 2022-09-12 23:13:43
 
 - Remove `jotai`; move to `zustand` + `immer` for global store

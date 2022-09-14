@@ -21,8 +21,9 @@ import {
 } from "../../components/TaskColorContext";
 import { TimeBlockDay } from "../../components/TimeBlockDay";
 import { TimeBlockUnit } from "../../components/TimeBlockUnit";
+
 import { TaskList, TimeBlockEntry } from "../../model/model";
-import { useTaskStore } from "../../model/store";
+import { useTaskStore } from "../../model/TaskStore";
 import { findOneTaskList } from "../../util/db";
 import { createUuid } from "../../util/helpers";
 import { quickPost } from "../../util/quickPost";
@@ -127,23 +128,110 @@ export default function TimeBlockView(props: TimeBlockViewProps) {
 
   useHotkeys(hotkeys);
 
-  const [newTaskText, setNewTaskText] = useState("");
-
-  const handleBulkTimeBlockChange = useCallback(
-    (entries: TimeBlockEntry[]) => {
-      // grab updated or existing
-      const newEntries = activeTaskList.timeBlockEntries.map((entry) => {
-        const newEntry = entries.find((e) => e.id === entry.id);
-        if (newEntry) {
-          return newEntry;
-        }
-        return entry;
-      });
-
-      setActiveTaskList({ ...activeTaskList, timeBlockEntries: newEntries });
-    },
-    [activeTaskList, setActiveTaskList]
+  const toggleDetailShortcut = useTaskStore(
+    (state) => state.toggleDetailShortcut
   );
+
+  const onChangePartial = useTaskStore(
+    (state) => state.updateHoverTimeBlockEntryPartial
+  );
+
+  const onDeleteHover = useTaskStore((state) => state.onDeleteHoverTask);
+
+  const onScheduleHover = useTaskStore((state) => state.onScheduleHoverTask);
+
+  const timeUnitHotKeys = useMemo<HotkeyConfig[]>(
+    () => [
+      {
+        combo: "d",
+        label: "details",
+        global: true,
+        group: "hover on block",
+
+        onKeyDown: () => toggleDetailShortcut(),
+      },
+
+      {
+        combo: "x",
+        label: "delete",
+        global: true,
+        group: "hover on block",
+
+        onKeyDown: () => onDeleteHover(),
+      },
+      {
+        combo: "s",
+        label: "schedule",
+        global: true,
+        group: "hover on block",
+
+        onKeyDown: () => onScheduleHover(),
+      },
+      {
+        combo: "1",
+        label: "set priority 1",
+        global: true,
+        group: "hover on block",
+
+        onKeyDown: () => onChangePartial({ priority: 1 }),
+      },
+      {
+        combo: "2",
+        label: "set priority 2",
+        global: true,
+        group: "hover on block",
+
+        onKeyDown: () => onChangePartial({ priority: 2 }),
+      },
+      {
+        combo: "3",
+        label: "set priority 3",
+        global: true,
+        group: "hover on block",
+
+        onKeyDown: () => onChangePartial({ priority: 3 }),
+      },
+
+      {
+        combo: "4",
+        label: "set priority 4",
+        global: true,
+        group: "hover on block",
+
+        onKeyDown: () => onChangePartial({ priority: 4 }),
+      },
+      {
+        combo: "5",
+        label: "set priority 5",
+        global: true,
+        group: "hover on block",
+
+        onKeyDown: () => onChangePartial({ priority: 5 }),
+      },
+      {
+        combo: "c",
+        label: "complete",
+        global: true,
+        group: "hover on block",
+
+        onKeyDown: () =>
+          onChangePartial((c) => ({ isComplete: !c.isComplete })),
+      },
+      {
+        combo: "f",
+        label: "freeze",
+        global: true,
+        group: "hover on block",
+
+        onKeyDown: () => onChangePartial((c) => ({ isFrozen: !c.isFrozen })),
+      },
+    ],
+    [onChangePartial, toggleDetailShortcut, onDeleteHover, onScheduleHover]
+  );
+
+  useHotkeys(timeUnitHotKeys);
+
+  const [newTaskText, setNewTaskText] = useState("");
 
   const handleCreateTaskClick = async (isScheduled = true) => {
     // const newStartTime = isScheduled ? getFirstStartTime() : undefined;
@@ -164,12 +252,6 @@ export default function TimeBlockView(props: TimeBlockViewProps) {
 
     setNewTaskText("");
   };
-
-  const onEntryChange = useCallback(
-    (id: string, newEntry: TimeBlockEntry) =>
-      handleBulkTimeBlockChange([newEntry]),
-    [handleBulkTimeBlockChange]
-  );
 
   const unscheduled = activeTaskList.timeBlockEntries.filter(
     (c) => c.start === undefined
@@ -220,11 +302,7 @@ export default function TimeBlockView(props: TimeBlockViewProps) {
               <h3>unscheduled</h3>
               <div style={{ display: "flex", flexWrap: "wrap" }}>
                 {unscheduled.map((block, idx) => (
-                  <TimeBlockUnit
-                    key={idx}
-                    block={block}
-                    startTime={startTime}
-                  />
+                  <TimeBlockUnit key={idx} block={block} />
                 ))}
               </div>
             </div>
@@ -234,7 +312,6 @@ export default function TimeBlockView(props: TimeBlockViewProps) {
                 shouldShowLeftSidebar={true}
                 dateStart={startTime}
                 dateEnd={endTime}
-                onEntryChange={handleBulkTimeBlockChange}
                 shouldScheduleAfterCurrent={shouldScheduleAfterCurrent}
                 nowInRightUnits={nowInRightUnits}
               />

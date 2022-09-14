@@ -1,6 +1,6 @@
 import { Button, Card, FormGroup, InputGroup, Switch } from "@blueprintjs/core";
 import { Popover2 } from "@blueprintjs/popover2";
-import { useTaskStore } from "../model/store";
+import { useTaskStore } from "../model/TaskStore";
 import { handleBooleanChange } from "./helpers";
 
 type SettingsPopoverProps = {
