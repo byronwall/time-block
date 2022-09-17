@@ -1,8 +1,9 @@
-import create from "zustand";
-import { createDefaultTaskList, TaskList, TimeBlockEntry } from "./model";
+import { scaleOrdinal, utcParse } from "d3";
 import produce from "immer";
-import { drag, utcParse } from "d3";
+import create from "zustand";
+
 import { quickPost } from "../util/quickPost";
+import { createDefaultTaskList, TaskList, TimeBlockEntry } from "./model";
 
 interface TaskStore {
   dateStart: () => Date;
@@ -51,13 +52,34 @@ interface SearchStore {
   setSearchText: (text: string) => void;
 }
 
+interface ColorStore {
+  isColoredByPriority: boolean;
+  setIsColoredByPriority: (isColoredByPriority: boolean) => void;
+  toggleIsColoredByPriority: () => void;
+
+  getColorFromPriority(priority: number): string;
+}
+
 const parser = utcParse("%H:%M");
 
-export type Store = TaskStore & HoverStore & SearchStore;
+export type Store = TaskStore & HoverStore & SearchStore & ColorStore;
 
 type PartialOrCallback<T> = Partial<T> | ((draft: T) => Partial<T>);
 
 export const useTaskStore = create<Store>((set, get) => ({
+  isColoredByPriority: true,
+  setIsColoredByPriority: (isColoredByPriority) => set({ isColoredByPriority }),
+  toggleIsColoredByPriority: () =>
+    set((state) => ({
+      isColoredByPriority: !state.isColoredByPriority,
+    })),
+  getColorFromPriority: (priority) => {
+    const scale = scaleOrdinal<number, string>()
+      .domain([1, 2, 3, 4, 5])
+      .range(["#D61E29", "#FDBB30", "#FEE08B", "#D9EF8B", "#A6D96A"]);
+    return scale(priority);
+  },
+
   isSearchOpen: false,
   searchText: "",
   setIsSearchOpen: (isOpen) =>

@@ -4,7 +4,6 @@ import { useContext, useState } from "react";
 import { TimeBlockEntry } from "../model/model";
 import { useTaskStore } from "../model/TaskStore";
 import { handleBooleanChange } from "./helpers";
-import { TaskColorContext } from "./TaskColorContext";
 
 interface TimeBlockDetailsProps {
   block: TimeBlockEntry;
@@ -21,7 +20,9 @@ export function TimeBlockDetails(props: TimeBlockDetailsProps) {
 
   const { description, start } = block;
 
-  const { getColorFromPriority } = useContext(TaskColorContext);
+  const getColorFromPriority = useTaskStore(
+    (store) => store.getColorFromPriority
+  );
 
   const durationsCommon = [15, 30, 45, 60, 90, 120, 180];
   return (

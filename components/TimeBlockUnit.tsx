@@ -3,7 +3,6 @@ import { CSSProperties, useContext, useState } from "react";
 import { TimeBlockEntry } from "../model/model";
 import { useTaskStore } from "../model/TaskStore";
 import { getTextColor } from "./helpers";
-import { TaskColorContext } from "./TaskColorContext";
 import { TaskUnitDetailsPopover } from "./TaskUnitDetailsPopover";
 import { TaskUnitEditOrDisplay } from "./TaskUnitEditOrDisplay";
 import { DragLoc } from "./TimeBlockDay";
@@ -57,14 +56,19 @@ export function TimeBlockUnit(props: TimeBlockUnitProps) {
 
   const isScheduled = block.start !== undefined;
 
-  const colorContext = useContext(TaskColorContext);
+  const isColoredByPriority = useTaskStore(
+    (store) => store.isColoredByPriority
+  );
+  const getColorFromPriority = useTaskStore(
+    (store) => store.getColorFromPriority
+  );
 
   let backgroundColor =
-    shouldColorDefault || !colorContext.isColoredByPriority
+    shouldColorDefault || !isColoredByPriority
       ? block.isComplete
         ? "#f5f5f5"
         : "#C0DFF7"
-      : colorContext.getColorFromPriority(block.priority ?? 5);
+      : getColorFromPriority(block.priority ?? 5);
 
   // search overrides color
   if (isLiveSearch) {

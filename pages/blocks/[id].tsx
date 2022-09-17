@@ -7,17 +7,12 @@ import {
   InputGroup,
   useHotkeys,
 } from "@blueprintjs/core";
-import { scaleOrdinal, timeFormat, utcFormat, utcParse } from "d3";
+import { timeFormat, utcFormat, utcParse } from "d3";
 import { isEqual } from "lodash-es";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { useSetState } from "react-use";
+import { useEffect, useMemo, useState } from "react";
 
 import { SearchOverlay } from "../../components/SearchOverlay";
 import { SettingsPopover } from "../../components/SettingsPopover";
-import {
-  ColorSansHandler,
-  TaskColorContext,
-} from "../../components/TaskColorContext";
 import { TimeBlockDay } from "../../components/TimeBlockDay";
 import { TimeBlockUnit } from "../../components/TimeBlockUnit";
 import { TaskList, TimeBlockEntry } from "../../model/model";
@@ -50,22 +45,6 @@ export default function TimeBlockView(props: TimeBlockViewProps) {
     (state) => !isEqual(state.taskList, initialTaskList)
   );
 
-  const [colorContext, setColorContext] = useState<ColorSansHandler>({
-    getColorFromPriority: (priority: number) => {
-      const scale = scaleOrdinal<number, string>()
-        .domain([1, 2, 3, 4, 5])
-        .range(["#D61E29", "#FDBB30", "#FEE08B", "#D9EF8B", "#A6D96A"]);
-      return scale(priority);
-    },
-    isColoredByPriority: true,
-  });
-
-  const onChange = useCallback(
-    (data: Partial<TaskColorContext>) =>
-      setColorContext({ ...colorContext, ...data }),
-    [colorContext]
-  );
-
   const handleSaveTaskList = useTaskStore((state) => state.onSaveActiveTasks);
 
   const updateTaskList = useTaskStore((c) => c.updateTaskListPartial);
@@ -83,17 +62,17 @@ export default function TimeBlockView(props: TimeBlockViewProps) {
   const [shouldScheduleAfterCurrent, setShouldScheduleAfterCurrent] =
     useState(true);
 
-  const hotkeys = useMemo<HotkeyConfig[]>(
-    () => [
+  const toggleColor = useTaskStore((state) => state.toggleIsColoredByPriority);
+
+  const hotkeys = useMemo<HotkeyConfig[]>(() => {
+    return [
       {
         combo: "shift+c",
         label: "color by priority",
         global: true,
         group: "time block view",
 
-        onKeyDown: () => {
-          onChange({ isColoredByPriority: !colorContext.isColoredByPriority });
-        },
+        onKeyDown: () => toggleColor(),
       },
       {
         combo: "shift+s",
@@ -108,9 +87,8 @@ export default function TimeBlockView(props: TimeBlockViewProps) {
           ev.preventDefault();
         },
       },
-    ],
-    [colorContext.isColoredByPriority, onChange, onSearchOpen]
-  );
+    ];
+  }, [onSearchOpen, toggleColor]);
 
   useHotkeys(hotkeys);
 
@@ -241,6 +219,8 @@ export default function TimeBlockView(props: TimeBlockViewProps) {
 
   const taskListName = useTaskStore((state) => state.taskList.name);
 
+
+  // TODO: this pulls in too many changes - tighten scope?
   const unscheduled = useTaskStore(
     (state) => state.taskList.timeBlockEntries
   ).filter((c) => c.start === undefined);
@@ -257,48 +237,44 @@ export default function TimeBlockView(props: TimeBlockViewProps) {
       {isDirty && <Button text="save all" onClick={handleSaveTaskList} />}
 
       <SettingsPopover
-        isColoredByPriority={colorContext.isColoredByPriority}
-        onChange={onChange}
         dateToStr={dateToStr}
         shouldScheduleAfterCurrent={shouldScheduleAfterCurrent}
         setShouldScheduleAfterCurrent={setShouldScheduleAfterCurrent}
       />
 
-      <TaskColorContext.Provider value={{ ...colorContext, onChange }}>
-        <>
-          <div style={{ margin: 30 }}>
-            <FormGroup inline>
-              <InputGroup
-                value={newTaskText}
-                onChange={(evt) => setNewTaskText(evt.target.value)}
-                onKeyDown={(evt) => {
-                  if (evt.key === "Enter") {
-                    handleCreateTaskClick(!evt.metaKey);
-                  }
-                }}
-                style={{ width: 400 }}
-              />
-            </FormGroup>
-          </div>
-          <div>
-            <h3>unscheduled</h3>
-            <div style={{ display: "flex", flexWrap: "wrap" }}>
-              {unscheduled.map((block, idx) => (
-                <TimeBlockUnit key={idx} block={block} />
-              ))}
-            </div>
-          </div>
-
-          <div style={{ display: "flex" }}>
-            <TimeBlockDay
-              shouldShowLeftSidebar={true}
-              shouldScheduleAfterCurrent={shouldScheduleAfterCurrent}
-              nowInRightUnits={nowInRightUnits}
+      <>
+        <div style={{ margin: 30 }}>
+          <FormGroup inline>
+            <InputGroup
+              value={newTaskText}
+              onChange={(evt) => setNewTaskText(evt.target.value)}
+              onKeyDown={(evt) => {
+                if (evt.key === "Enter") {
+                  handleCreateTaskClick(!evt.metaKey);
+                }
+              }}
+              style={{ width: 400 }}
             />
+          </FormGroup>
+        </div>
+        <div>
+          <h3>unscheduled</h3>
+          <div style={{ display: "flex", flexWrap: "wrap" }}>
+            {unscheduled.map((block, idx) => (
+              <TimeBlockUnit key={idx} block={block} />
+            ))}
           </div>
-          <SearchOverlay />
-        </>
-      </TaskColorContext.Provider>
+        </div>
+
+        <div style={{ display: "flex" }}>
+          <TimeBlockDay
+            shouldShowLeftSidebar={true}
+            shouldScheduleAfterCurrent={shouldScheduleAfterCurrent}
+            nowInRightUnits={nowInRightUnits}
+          />
+        </div>
+        <SearchOverlay />
+      </>
     </>
   );
 }

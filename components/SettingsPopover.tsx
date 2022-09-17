@@ -4,8 +4,6 @@ import { useTaskStore } from "../model/TaskStore";
 import { handleBooleanChange } from "./helpers";
 
 type SettingsPopoverProps = {
-  isColoredByPriority: boolean;
-  onChange: (arg0: { isColoredByPriority: boolean }) => void;
   shouldScheduleAfterCurrent: boolean;
   setShouldScheduleAfterCurrent: (arg0: boolean) => void;
   dateToStr: (arg0: any) => string;
@@ -13,12 +11,17 @@ type SettingsPopoverProps = {
 
 export function SettingsPopover(props: SettingsPopoverProps) {
   const {
-    isColoredByPriority,
-    onChange,
     shouldScheduleAfterCurrent,
     setShouldScheduleAfterCurrent,
     dateToStr,
   } = props;
+
+  const isColoredByPriority = useTaskStore(
+    (state) => state.isColoredByPriority
+  );
+  const setIsColoredByPriority = useTaskStore(
+    (state) => state.setIsColoredByPriority
+  );
 
   const updateTaskList = useTaskStore((state) => state.updateTaskListPartial);
 
@@ -33,9 +36,7 @@ export function SettingsPopover(props: SettingsPopoverProps) {
             label="color by priority"
             checked={isColoredByPriority}
             onChange={handleBooleanChange((isColoredByPriority) =>
-              onChange({
-                isColoredByPriority,
-              })
+              setIsColoredByPriority(isColoredByPriority)
             )}
           />
           <Switch
