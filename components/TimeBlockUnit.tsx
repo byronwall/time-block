@@ -1,15 +1,8 @@
-import {
-  CSSProperties,
-  useCallback,
-  useContext,
-  useMemo,
-  useState,
-} from "react";
+import { CSSProperties, useContext, useState } from "react";
 
 import { TimeBlockEntry } from "../model/model";
 import { useTaskStore } from "../model/TaskStore";
 import { getTextColor } from "./helpers";
-import { SearchContext } from "./SearchContext";
 import { TaskColorContext } from "./TaskColorContext";
 import { TaskUnitDetailsPopover } from "./TaskUnitDetailsPopover";
 import { TaskUnitEditOrDisplay } from "./TaskUnitEditOrDisplay";
@@ -18,10 +11,8 @@ import { DragLoc } from "./TimeBlockDay";
 export interface TimeBlockUnitProps {
   onStartDrag?: (id: string, location: DragLoc, clientY: number) => void;
 
-  // onDelete?(): void;
-
   hourScale?: d3.ScaleTime<number, number>;
-  // blockAtom: PrimitiveAtom<TimeBlockEntry>;
+
   block: TimeBlockEntry;
 
   column?: number;
@@ -32,9 +23,13 @@ export interface TimeBlockUnitProps {
 export function TimeBlockUnit(props: TimeBlockUnitProps) {
   const { onStartDrag, block, hourScale, column, shouldColorDefault } = props;
 
-  const searchContext = useContext(SearchContext);
-  const isLiveSearch = searchContext.isSearchOpen && searchContext.searchText;
-  const isSearchMatch = block.description.includes(searchContext.searchText);
+  const isLiveSearch = useTaskStore(
+    (searchContext) => searchContext.isSearchOpen && searchContext.searchText
+  );
+
+  const isSearchMatch = useTaskStore((state) =>
+    block.description.includes(state.searchText)
+  );
 
   const zeroPx = hourScale?.(0) ?? 0;
   const durationPx = hourScale?.(new Date(block.duration * 1000)) ?? 80;
@@ -85,10 +80,11 @@ export function TimeBlockUnit(props: TimeBlockUnitProps) {
 
   const textColor = getTextColor(backgroundColor);
 
-  const detailOptions = useTaskStore((state) => state.detailOptions);
+  // this is tightly scope to avoid re-renders
+  const isDetailsOpen = useTaskStore(
+    (state) => state.detailOptions.isOpen && state.detailOptions.id === block.id
+  );
   const setMouseOverId = useTaskStore((state) => state.setMouseOverId);
-
-  const isDetailsOpen = detailOptions.isOpen && detailOptions.id === block.id;
 
   const onChangePartial = useTaskStore(
     (store) => store.updateTimeBlockEntryPartial
@@ -139,7 +135,6 @@ export function TimeBlockUnit(props: TimeBlockUnitProps) {
       <div style={{ display: "flex" }}>
         <TaskUnitEditOrDisplay
           description={block.description}
-          searchText={searchContext.searchText}
           isLiveSearch={isLiveSearch}
           isEdit={isEdit}
           setIsEdit={setIsEdit}

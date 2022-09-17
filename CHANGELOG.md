@@ -1,5 +1,11 @@
 # Time Block changelog
 
+## 0.0.17 -- 2022-09-16 23:29:49
+
+- Fix column layout issue - had delete code that was needed
+- Prevent excess renders when showing the details popup
+- Remove the search context and push into the main state
+
 ## 0.0.16 -- 2022-09-13 23:43:52
 
 - Rework the hover and hotkey dynamics to go through the common store

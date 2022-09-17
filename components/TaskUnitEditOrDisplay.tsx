@@ -1,6 +1,7 @@
 import { Button, InputGroup } from "@blueprintjs/core";
 import { MouseEvent, MouseEventHandler } from "react";
 import Highlighter from "react-highlight-words";
+import { useTaskStore } from "../model/TaskStore";
 
 type TaskUnitEditOrDisplayProps = {
   isEdit: any;
@@ -9,7 +10,7 @@ type TaskUnitEditOrDisplayProps = {
   acceptEditText: () => void;
   setIsEdit: (arg0: boolean) => void;
   isLiveSearch: any;
-  searchText: any;
+
   description: any;
 };
 
@@ -21,9 +22,11 @@ export function TaskUnitEditOrDisplay(props: TaskUnitEditOrDisplayProps) {
     acceptEditText,
     setIsEdit,
     isLiveSearch,
-    searchText,
+
     description,
   } = props;
+
+  const searchText = useTaskStore((state) => state.searchText);
 
   return (
     <div>

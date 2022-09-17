@@ -1,13 +1,14 @@
 import { Card, InputGroup, Overlay } from "@blueprintjs/core";
-import { useContext, useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { usePrevious } from "react-use";
+import { useTaskStore } from "../model/TaskStore";
 import { handleStringChange } from "./helpers";
-import { SearchContext } from "./SearchContext";
 
 export function SearchOverlay() {
-  const searchContext = useContext(SearchContext);
-
-  const { searchText, isSearchOpen, onChange } = searchContext;
+  const isSearchOpen = useTaskStore((state) => state.isSearchOpen);
+  const setIsSearchOpen = useTaskStore((state) => state.setIsSearchOpen);
+  const searchText = useTaskStore((state) => state.searchText);
+  const setSearchText = useTaskStore((state) => state.setSearchText);
 
   // store ref for input group
   const inputRef = useRef<HTMLInputElement>(null);
@@ -25,7 +26,7 @@ export function SearchOverlay() {
   return (
     <Overlay
       isOpen={isSearchOpen}
-      onClose={() => onChange({ isSearchOpen: false })}
+      onClose={() => setIsSearchOpen(false)}
       hasBackdrop={false}
       transitionDuration={0}
     >
@@ -34,7 +35,7 @@ export function SearchOverlay() {
           inputRef={inputRef}
           value={searchText}
           onChange={handleStringChange((searchText) =>
-            onChange({ searchText })
+            setSearchText(searchText)
           )}
         />
       </Card>

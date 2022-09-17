@@ -1,10 +1,12 @@
 import create from "zustand";
 import { createDefaultTaskList, TaskList, TimeBlockEntry } from "./model";
 import produce from "immer";
-import { utcParse } from "d3";
+import { drag, utcParse } from "d3";
+import { quickPost } from "../util/quickPost";
 
 interface TaskStore {
   dateStart: () => Date;
+  dateEnd: () => Date;
 
   taskList: TaskList;
   setTaskList: (taskList: TaskList) => void;
@@ -17,6 +19,8 @@ interface TaskStore {
   updateTaskListPartial: (updates: Partial<TaskList>) => void;
 
   updateTimeBlockEntryPartialBulk: (updates: TimeBlockBulkPartial) => void;
+
+  onSaveActiveTasks: () => void;
 }
 
 interface HoverStore {
@@ -39,15 +43,39 @@ interface HoverStore {
   onScheduleHoverTask: () => void;
 }
 
+interface SearchStore {
+  isSearchOpen: boolean;
+  searchText: string;
+
+  setIsSearchOpen: (isOpen: boolean) => void;
+  setSearchText: (text: string) => void;
+}
+
 const parser = utcParse("%H:%M");
 
-export type Store = TaskStore & HoverStore;
+export type Store = TaskStore & HoverStore & SearchStore;
 
 type PartialOrCallback<T> = Partial<T> | ((draft: T) => Partial<T>);
 
 export const useTaskStore = create<Store>((set, get) => ({
+  isSearchOpen: false,
+  searchText: "",
+  setIsSearchOpen: (isOpen) =>
+    set(
+      produce((draft) => {
+        draft.isSearchOpen = isOpen;
+      })
+    ),
+  setSearchText: (text) =>
+    set(
+      produce((draft) => {
+        draft.searchText = text;
+      })
+    ),
   taskList: createDefaultTaskList(),
   dateStart: () => parser(get()?.taskList.viewStart),
+  dateEnd: () => parser(get()?.taskList.viewEnd),
+
   setTaskList: (taskList) => set({ taskList }),
   updateTaskListPartial: (updates) => {
     set(
@@ -55,6 +83,10 @@ export const useTaskStore = create<Store>((set, get) => ({
         Object.assign(draft.taskList, updates);
       })
     );
+  },
+
+  onSaveActiveTasks: () => {
+    quickPost("/api/insertTaskList", get().taskList);
   },
 
   addTimeBlockEntry: (entry) =>

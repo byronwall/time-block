@@ -9,8 +9,6 @@ type SettingsPopoverProps = {
   shouldScheduleAfterCurrent: boolean;
   setShouldScheduleAfterCurrent: (arg0: boolean) => void;
   dateToStr: (arg0: any) => string;
-  startTime: any;
-  endTime: any;
 };
 
 export function SettingsPopover(props: SettingsPopoverProps) {
@@ -20,11 +18,12 @@ export function SettingsPopover(props: SettingsPopoverProps) {
     shouldScheduleAfterCurrent,
     setShouldScheduleAfterCurrent,
     dateToStr,
-    startTime,
-    endTime,
   } = props;
 
   const updateTaskList = useTaskStore((state) => state.updateTaskListPartial);
+
+  const startTime = useTaskStore((state) => state.dateStart)();
+  const endTime = useTaskStore((state) => state.dateEnd)();
 
   return (
     <Popover2

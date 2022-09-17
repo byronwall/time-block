@@ -8,19 +8,14 @@ import {
   utcParse,
 } from "d3";
 import React, { useMemo, useRef, useState } from "react";
-
-import { useWhatChanged } from "@simbathesailor/use-what-changed";
-
 import { TimeBlockEntry } from "../model/model";
+
 import { useTaskStore } from "../model/TaskStore";
 import { getTImeBlocksWithoutOverlap } from "./helpers";
 import { TimeBlockSidebarTicks } from "./TimeBlockSidebarTicks";
 import { TimeBlockUnit } from "./TimeBlockUnit";
 
 interface TimeBlockDayProps {
-  dateStart: Date;
-  dateEnd: Date;
-
   shouldScheduleAfterCurrent: boolean;
   nowInRightUnits: Date;
 
@@ -33,16 +28,13 @@ export function TimeBlockDay(props: TimeBlockDayProps) {
   // store array of time blocks in state
 
   // des props
-  const {
-    dateStart,
-    dateEnd,
-    nowInRightUnits,
-    shouldScheduleAfterCurrent,
-    shouldShowLeftSidebar,
-  } = props;
+  const { nowInRightUnits, shouldScheduleAfterCurrent, shouldShowLeftSidebar } =
+    props;
 
   const timeBlocks = useTaskStore((state) => state.taskList.timeBlockEntries);
   const setTimeBlock = useTaskStore((state) => state.updateTimeBlockEntry);
+  const dateStart = useTaskStore((state) => state.dateStart)();
+  const dateEnd = useTaskStore((state) => state.dateEnd)();
 
   // track the id which is dragging in state
   const [dragId, setDragId] = useState("");
@@ -79,7 +71,36 @@ export function TimeBlockDay(props: TimeBlockDayProps) {
   const sortedBlocks = [...scheduledTasks];
   sortedBlocks.sort((a, b) => a.start - b.start);
 
+  // TODO: move this column code to a better place
   const colHash = {};
+  sortedBlocks.reduce<TimeBlockEntry[][]>((hash, block) => {
+    if (hash.length === 0) {
+      colHash[block.id] = 0;
+      hash.push([block]);
+      return hash;
+    }
+
+    // check if current block can be added after last item in each col array
+
+    let didAdd = false;
+    hash.forEach((col, i) => {
+      if (didAdd) return;
+      const lastBlock = col[col.length - 1];
+      if (lastBlock.start + lastBlock.duration * 1000 <= block.start) {
+        col.push(block);
+        colHash[block.id] = i;
+        didAdd = true;
+        return;
+      }
+    });
+
+    if (!didAdd) {
+      hash.push([block]);
+      colHash[block.id] = hash.length - 1;
+    }
+
+    return hash;
+  }, []);
 
   const handleMouseMove = (evt: React.MouseEvent) => {
     evt.stopPropagation();
@@ -170,6 +191,7 @@ export function TimeBlockDay(props: TimeBlockDayProps) {
         group: "time block view",
 
         onKeyDown: () => {
+          // TODO: move this to store and make it work
           const schedStartTime = shouldScheduleAfterCurrent
             ? +nowInRightUnits
             : +dateStart;
@@ -178,6 +200,8 @@ export function TimeBlockDay(props: TimeBlockDayProps) {
             timeBlocks,
             schedStartTime
           );
+
+          console.log("new entries", newEntries);
 
           bulkUpdate(newEntries);
         },
@@ -192,7 +216,7 @@ export function TimeBlockDay(props: TimeBlockDayProps) {
     ]
   );
 
-  useHotkeys(hotkeys);
+  // useHotkeys(hotkeys);
 
   return (
     <div style={{ marginBottom: 100 }}>
