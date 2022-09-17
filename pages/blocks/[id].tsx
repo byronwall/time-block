@@ -54,13 +54,7 @@ export default function TimeBlockView(props: TimeBlockViewProps) {
 
   // store a string for start time in state
 
-  const nowInRightUnits = useMemo(() => parser(dateToStrLocal(new Date())), []);
-
   const onSearchOpen = useTaskStore((state) => state.setIsSearchOpen);
-
-  // store shouldScheduleAfterCurrent in state
-  const [shouldScheduleAfterCurrent, setShouldScheduleAfterCurrent] =
-    useState(true);
 
   const toggleColor = useTaskStore((state) => state.toggleIsColoredByPriority);
 
@@ -219,7 +213,6 @@ export default function TimeBlockView(props: TimeBlockViewProps) {
 
   const taskListName = useTaskStore((state) => state.taskList.name);
 
-
   // TODO: this pulls in too many changes - tighten scope?
   const unscheduled = useTaskStore(
     (state) => state.taskList.timeBlockEntries
@@ -236,11 +229,7 @@ export default function TimeBlockView(props: TimeBlockViewProps) {
 
       {isDirty && <Button text="save all" onClick={handleSaveTaskList} />}
 
-      <SettingsPopover
-        dateToStr={dateToStr}
-        shouldScheduleAfterCurrent={shouldScheduleAfterCurrent}
-        setShouldScheduleAfterCurrent={setShouldScheduleAfterCurrent}
-      />
+      <SettingsPopover dateToStr={dateToStr} />
 
       <>
         <div style={{ margin: 30 }}>
@@ -267,11 +256,7 @@ export default function TimeBlockView(props: TimeBlockViewProps) {
         </div>
 
         <div style={{ display: "flex" }}>
-          <TimeBlockDay
-            shouldShowLeftSidebar={true}
-            shouldScheduleAfterCurrent={shouldScheduleAfterCurrent}
-            nowInRightUnits={nowInRightUnits}
-          />
+          <TimeBlockDay shouldShowLeftSidebar={true} />
         </div>
         <SearchOverlay />
       </>

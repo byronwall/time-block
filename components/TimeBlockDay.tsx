@@ -11,14 +11,10 @@ import React, { useMemo, useRef, useState } from "react";
 import { TimeBlockEntry } from "../model/model";
 
 import { useTaskStore } from "../model/TaskStore";
-import { getTImeBlocksWithoutOverlap } from "./helpers";
 import { TimeBlockSidebarTicks } from "./TimeBlockSidebarTicks";
 import { TimeBlockUnit } from "./TimeBlockUnit";
 
 interface TimeBlockDayProps {
-  shouldScheduleAfterCurrent: boolean;
-  nowInRightUnits: Date;
-
   shouldShowLeftSidebar: boolean;
 }
 
@@ -28,8 +24,7 @@ export function TimeBlockDay(props: TimeBlockDayProps) {
   // store array of time blocks in state
 
   // des props
-  const { nowInRightUnits, shouldScheduleAfterCurrent, shouldShowLeftSidebar } =
-    props;
+  const { shouldShowLeftSidebar } = props;
 
   const timeBlocks = useTaskStore((state) => state.taskList.timeBlockEntries);
   const setTimeBlock = useTaskStore((state) => state.updateTimeBlockEntry);
@@ -178,45 +173,21 @@ export function TimeBlockDay(props: TimeBlockDayProps) {
   const nowParsed = parser(nowFormatted);
   const curTimeTop = hourScale(nowParsed);
 
-  const bulkUpdate = useTaskStore(
-    (state) => state.updateTimeBlockEntryPartialBulk
-  );
+  const onRebalance = useTaskStore((state) => state.onRebalanceTasks);
 
-  const hotkeys = useMemo(
-    () => [
+  const hotkeys = useMemo(() => {
+    return [
       {
         combo: "shift+r",
         label: "rebalance",
         global: true,
         group: "time block view",
-
-        onKeyDown: () => {
-          // TODO: move this to store and make it work
-          const schedStartTime = shouldScheduleAfterCurrent
-            ? +nowInRightUnits
-            : +dateStart;
-
-          const newEntries = getTImeBlocksWithoutOverlap(
-            timeBlocks,
-            schedStartTime
-          );
-
-          console.log("new entries", newEntries);
-
-          bulkUpdate(newEntries);
-        },
+        onKeyDown: () => onRebalance(),
       },
-    ],
-    [
-      timeBlocks,
-      shouldScheduleAfterCurrent,
-      nowInRightUnits,
-      dateStart,
-      bulkUpdate,
-    ]
-  );
+    ];
+  }, [onRebalance]);
 
-  // useHotkeys(hotkeys);
+  useHotkeys(hotkeys);
 
   return (
     <div style={{ marginBottom: 100 }}>

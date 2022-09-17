@@ -1,7 +1,8 @@
-import { scaleOrdinal, utcParse } from "d3";
+import { scaleOrdinal, timeFormat, utcParse } from "d3";
 import produce from "immer";
 import create from "zustand";
 
+import { getTImeBlocksWithoutOverlap } from "../components/helpers";
 import { quickPost } from "../util/quickPost";
 import { createDefaultTaskList, TaskList, TimeBlockEntry } from "./model";
 
@@ -12,7 +13,6 @@ interface TaskStore {
   taskList: TaskList;
   setTaskList: (taskList: TaskList) => void;
   addTimeBlockEntry: (entry: TimeBlockEntry) => void;
-  removeTimeBlockEntry: (id: string) => void;
   updateTimeBlockEntry: (entry: TimeBlockEntry) => void;
   updateTimeBlockEntryPartial(id: string, updates: Partial<TimeBlockEntry>);
   updateHoverTimeBlockEntryPartial(updates: PartialOrCallback<TimeBlockEntry>);
@@ -22,6 +22,11 @@ interface TaskStore {
   updateTimeBlockEntryPartialBulk: (updates: TimeBlockBulkPartial) => void;
 
   onSaveActiveTasks: () => void;
+
+  onRebalanceTasks: () => void;
+
+  shouldScheduleAfterCurrent: boolean;
+  setShouldScheduleAfterCurrent: (shouldScheduleAfterCurrent: boolean) => void;
 }
 
 interface HoverStore {
@@ -61,12 +66,33 @@ interface ColorStore {
 }
 
 const parser = utcParse("%H:%M");
+const dateToStrLocal = timeFormat("%H:%M");
 
 export type Store = TaskStore & HoverStore & SearchStore & ColorStore;
 
 type PartialOrCallback<T> = Partial<T> | ((draft: T) => Partial<T>);
 
 export const useTaskStore = create<Store>((set, get) => ({
+  shouldScheduleAfterCurrent: true,
+  setShouldScheduleAfterCurrent: (shouldScheduleAfterCurrent) => {
+    set({ shouldScheduleAfterCurrent });
+  },
+  onRebalanceTasks: () => {
+    // TODO: verify that this works?
+    // TODO: this can now process the draft directly... update
+    const nowInRightUnits = parser(dateToStrLocal(new Date()));
+
+    const schedStartTime = get().shouldScheduleAfterCurrent
+      ? +nowInRightUnits
+      : +get().dateStart();
+
+    const newEntries = getTImeBlocksWithoutOverlap(
+      get().taskList.timeBlockEntries,
+      schedStartTime
+    );
+
+    get().updateTimeBlockEntryPartialBulk(newEntries);
+  },
   isColoredByPriority: true,
   setIsColoredByPriority: (isColoredByPriority) => set({ isColoredByPriority }),
   toggleIsColoredByPriority: () =>
@@ -113,18 +139,6 @@ export const useTaskStore = create<Store>((set, get) => ({
 
   addTimeBlockEntry: (entry) =>
     set(produce((draft) => draft.taskList.timeBlockEntries.push(entry))),
-
-  removeTimeBlockEntry: (id) =>
-    set(
-      produce((draft) => {
-        const index = draft.taskList.timeBlockEntries.findIndex(
-          (e) => e.id === id
-        );
-        if (index >= 0) {
-          draft.taskList.timeBlockEntries.splice(index, 1);
-        }
-      })
-    ),
 
   updateTimeBlockEntry: (entry) =>
     set(
@@ -224,9 +238,7 @@ export const useTaskStore = create<Store>((set, get) => ({
 
   mouseOverId: undefined,
   lastUpdated: +Date.now(),
-  setMouseOverId: (id) => {
-    return set({ mouseOverId: id });
-  },
+  setMouseOverId: (id) => set({ mouseOverId: id }),
   detailOptions: { id: "", isOpen: false },
   setDetailOptions: (options) => set({ detailOptions: options }),
   toggleDetailShortcut: (forcedState?: boolean) => {

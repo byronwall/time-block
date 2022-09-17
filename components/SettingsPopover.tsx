@@ -4,17 +4,11 @@ import { useTaskStore } from "../model/TaskStore";
 import { handleBooleanChange } from "./helpers";
 
 type SettingsPopoverProps = {
-  shouldScheduleAfterCurrent: boolean;
-  setShouldScheduleAfterCurrent: (arg0: boolean) => void;
   dateToStr: (arg0: any) => string;
 };
 
 export function SettingsPopover(props: SettingsPopoverProps) {
-  const {
-    shouldScheduleAfterCurrent,
-    setShouldScheduleAfterCurrent,
-    dateToStr,
-  } = props;
+  const { dateToStr } = props;
 
   const isColoredByPriority = useTaskStore(
     (state) => state.isColoredByPriority
@@ -27,6 +21,13 @@ export function SettingsPopover(props: SettingsPopoverProps) {
 
   const startTime = useTaskStore((state) => state.dateStart)();
   const endTime = useTaskStore((state) => state.dateEnd)();
+
+  const shouldScheduleAfterCurrent = useTaskStore(
+    (state) => state.shouldScheduleAfterCurrent
+  );
+  const setShouldScheduleAfterCurrent = useTaskStore(
+    (state) => state.setShouldScheduleAfterCurrent
+  );
 
   return (
     <Popover2
