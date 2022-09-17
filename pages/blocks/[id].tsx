@@ -7,7 +7,6 @@ import {
   InputGroup,
   useHotkeys,
 } from "@blueprintjs/core";
-import { timeFormat, utcFormat, utcParse } from "d3";
 import { isEqual } from "lodash-es";
 import { useEffect, useMemo, useState } from "react";
 
@@ -24,11 +23,6 @@ interface TimeBlockViewProps {
   initialTaskList: TaskList;
 }
 
-const parser = utcParse("%H:%M");
-
-const dateToStr = utcFormat("%H:%M");
-const dateToStrLocal = timeFormat("%H:%M");
-
 export default function TimeBlockView(props: TimeBlockViewProps) {
   const { initialTaskList } = props;
 
@@ -38,8 +32,6 @@ export default function TimeBlockView(props: TimeBlockViewProps) {
   useEffect(() => {
     setActiveTaskList(initialTaskList);
   }, []);
-
-  console.log("render main view");
 
   const isDirty = useTaskStore(
     (state) => !isEqual(state.taskList, initialTaskList)
@@ -229,10 +221,11 @@ export default function TimeBlockView(props: TimeBlockViewProps) {
 
       {isDirty && <Button text="save all" onClick={handleSaveTaskList} />}
 
-      <SettingsPopover dateToStr={dateToStr} />
+      <SettingsPopover />
 
       <>
         <div style={{ margin: 30 }}>
+          {/* TODO: move this add new into its own comp */}
           <FormGroup inline>
             <InputGroup
               value={newTaskText}

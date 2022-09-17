@@ -1,14 +1,13 @@
 import { Button, Card, FormGroup, InputGroup, Switch } from "@blueprintjs/core";
 import { Popover2 } from "@blueprintjs/popover2";
+import { utcFormat } from "d3";
 import { useTaskStore } from "../model/TaskStore";
 import { handleBooleanChange } from "./helpers";
 
-type SettingsPopoverProps = {
-  dateToStr: (arg0: any) => string;
-};
+type SettingsPopoverProps = {};
 
 export function SettingsPopover(props: SettingsPopoverProps) {
-  const { dateToStr } = props;
+  const dateToStr = utcFormat("%H:%M");
 
   const isColoredByPriority = useTaskStore(
     (state) => state.isColoredByPriority
