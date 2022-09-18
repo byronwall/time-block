@@ -1,23 +1,21 @@
 import {
   Button,
   EditableText,
-  FormGroup,
   H2,
   HotkeyConfig,
-  InputGroup,
   useHotkeys,
 } from "@blueprintjs/core";
 import { isEqual } from "lodash-es";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 
+import { AddNewTask } from "../../components/AddNewTask";
 import { SearchOverlay } from "../../components/SearchOverlay";
 import { SettingsPopover } from "../../components/SettingsPopover";
 import { TimeBlockDay } from "../../components/TimeBlockDay";
 import { TimeBlockUnit } from "../../components/TimeBlockUnit";
-import { TaskList, TimeBlockEntry } from "../../model/model";
+import { TaskList } from "../../model/model";
 import { useTaskStore } from "../../model/TaskStore";
 import { findOneTaskList } from "../../util/db";
-import { createUuid } from "../../util/helpers";
 
 interface TimeBlockViewProps {
   initialTaskList: TaskList;
@@ -90,6 +88,7 @@ export default function TimeBlockView(props: TimeBlockViewProps) {
 
   const onScheduleHover = useTaskStore((state) => state.onScheduleHoverTask);
 
+  // TODO: generate these hot key defs in the store
   const timeUnitHotKeys = useMemo<HotkeyConfig[]>(
     () => [
       {
@@ -175,33 +174,29 @@ export default function TimeBlockView(props: TimeBlockViewProps) {
 
         onKeyDown: () => onChangePartial((c) => ({ isFrozen: !c.isFrozen })),
       },
+      {
+        combo: "r",
+        label: "increment day",
+        global: true,
+        group: "hover on block",
+
+        onKeyDown: () => onChangePartial((c) => ({ day: c.day + 1 })),
+      },
+
+      {
+        combo: "e",
+        label: "decrement day",
+        global: true,
+        group: "hover on block",
+
+        onKeyDown: () =>
+          onChangePartial((c) => ({ day: Math.max(0, c.day - 1) })),
+      },
     ],
     [onChangePartial, toggleDetailShortcut, onDeleteHover, onScheduleHover]
   );
 
   useHotkeys(timeUnitHotKeys);
-
-  const [newTaskText, setNewTaskText] = useState("");
-
-  const addNewTask = useTaskStore((state) => state.addTimeBlockEntry);
-
-  const handleCreateTaskClick = async (isScheduled = true) => {
-    // const newStartTime = isScheduled ? getFirstStartTime() : undefined;
-    const newStartTime = isScheduled ? undefined : undefined;
-
-    // add new task to state
-    const task: TimeBlockEntry = {
-      id: createUuid(),
-      description: newTaskText,
-      duration: 60 * 60,
-      start: newStartTime,
-      priority: 5,
-    };
-
-    addNewTask(task);
-
-    setNewTaskText("");
-  };
 
   const taskListName = useTaskStore((state) => state.taskList.name);
 
@@ -209,6 +204,10 @@ export default function TimeBlockView(props: TimeBlockViewProps) {
   const unscheduled = useTaskStore(
     (state) => state.taskList.timeBlockEntries
   ).filter((c) => c.start === undefined);
+
+  const numberOfDays = useTaskStore((state) => state.numberOfDays)();
+
+  const daysToRender = Array.from(Array(numberOfDays + 1).keys());
 
   return (
     <>
@@ -224,21 +223,7 @@ export default function TimeBlockView(props: TimeBlockViewProps) {
       <SettingsPopover />
 
       <>
-        <div style={{ margin: 30 }}>
-          {/* TODO: move this add new into its own comp */}
-          <FormGroup inline>
-            <InputGroup
-              value={newTaskText}
-              onChange={(evt) => setNewTaskText(evt.target.value)}
-              onKeyDown={(evt) => {
-                if (evt.key === "Enter") {
-                  handleCreateTaskClick(!evt.metaKey);
-                }
-              }}
-              style={{ width: 400 }}
-            />
-          </FormGroup>
-        </div>
+        <AddNewTask />
         <div>
           <h3>unscheduled</h3>
           <div style={{ display: "flex", flexWrap: "wrap" }}>
@@ -249,7 +234,13 @@ export default function TimeBlockView(props: TimeBlockViewProps) {
         </div>
 
         <div style={{ display: "flex" }}>
-          <TimeBlockDay shouldShowLeftSidebar={true} />
+          {daysToRender.map((day) => (
+            <TimeBlockDay
+              key={day}
+              shouldShowLeftSidebar={day === 0}
+              day={day}
+            />
+          ))}
         </div>
         <SearchOverlay />
       </>

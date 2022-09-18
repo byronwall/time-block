@@ -16,6 +16,8 @@ import { TimeBlockUnit } from "./TimeBlockUnit";
 
 interface TimeBlockDayProps {
   shouldShowLeftSidebar: boolean;
+
+  day: number;
 }
 
 export type DragLoc = "top" | "bottom" | "all";
@@ -24,9 +26,11 @@ export function TimeBlockDay(props: TimeBlockDayProps) {
   // store array of time blocks in state
 
   // des props
-  const { shouldShowLeftSidebar } = props;
+  const { shouldShowLeftSidebar, day } = props;
 
-  const timeBlocks = useTaskStore((state) => state.taskList.timeBlockEntries);
+  const timeBlocks = useTaskStore(
+    (state) => state.taskList.timeBlockEntries
+  ).filter((c) => c.day === day);
   const setTimeBlock = useTaskStore((state) => state.updateTimeBlockEntry);
   const dateStart = useTaskStore((state) => state.dateStart)();
   const dateEnd = useTaskStore((state) => state.dateEnd)();

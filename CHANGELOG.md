@@ -1,5 +1,11 @@
 # Time Block changelog
 
+## 0.0.18 -- 2022-09-17 22:52:10
+
+- Move add new task form into its own component - reduce renders
+- Allow for showing multiple days - store this in the model for now
+- Sort out scheduling problem on main task list
+
 ## 0.0.17 -- 2022-09-17 01:17:28
 
 - Fix column layout issue - had delete code that was needed

@@ -6,6 +6,9 @@ export interface TimeBlockEntry {
   id: string;
   priority: number;
 
+  // day will be 0 by default -- will increment if tasks are on other days
+  day: number;
+
   isComplete?: boolean;
   isFrozen?: boolean;
 }

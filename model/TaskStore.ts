@@ -27,6 +27,8 @@ interface TaskStore {
 
   shouldScheduleAfterCurrent: boolean;
   setShouldScheduleAfterCurrent: (shouldScheduleAfterCurrent: boolean) => void;
+
+  numberOfDays: () => number;
 }
 
 interface HoverStore {
@@ -73,6 +75,13 @@ export type Store = TaskStore & HoverStore & SearchStore & ColorStore;
 type PartialOrCallback<T> = Partial<T> | ((draft: T) => Partial<T>);
 
 export const useTaskStore = create<Store>((set, get) => ({
+  numberOfDays: () => {
+    const maxDayNum = get().taskList.timeBlockEntries.reduce((acc, entry) => {
+      return Math.max(acc, entry.day ?? 0);
+    }, 0);
+    return maxDayNum;
+  },
+
   shouldScheduleAfterCurrent: true,
   setShouldScheduleAfterCurrent: (shouldScheduleAfterCurrent) => {
     set({ shouldScheduleAfterCurrent });
@@ -138,7 +147,11 @@ export const useTaskStore = create<Store>((set, get) => ({
   },
 
   addTimeBlockEntry: (entry) =>
-    set(produce((draft) => draft.taskList.timeBlockEntries.push(entry))),
+    set(
+      produce((draft) => {
+        draft.taskList.timeBlockEntries.push(entry);
+      })
+    ),
 
   updateTimeBlockEntry: (entry) =>
     set(
@@ -219,19 +232,18 @@ export const useTaskStore = create<Store>((set, get) => ({
         }
         // schedule
 
-        const getFirstStartTime = (entriesFirstDay: TimeBlockEntry[] = []) => {
-          const maxEndTime = entriesFirstDay.reduce((max, block) => {
+        const maxEndTime = draft.taskList.timeBlockEntries.reduce(
+          (max, block) => {
             if (block.start === undefined) {
               return max;
             }
 
             return Math.max(max, block.start + block.duration * 1000);
-          }, draft.dateStart().getTime());
+          },
+          -Number.MAX_VALUE
+        );
 
-          return maxEndTime;
-        };
-
-        entry.start = getFirstStartTime(draft.taskList.timeBlockEntries);
+        entry.start = maxEndTime;
       })
     );
   },

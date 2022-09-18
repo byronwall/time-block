@@ -1,6 +1,6 @@
-import { ReadStream } from "fs";
 import Redis from "ioredis";
-import { TaskList, TaskListOld, TimeBlockDay } from "../model/model";
+
+import { TaskList, TaskListOld } from "../model/model";
 
 const { REDIS_URL = "" } = process.env;
 // delete process.env.REDIS_URL;
@@ -69,6 +69,11 @@ function migrateTaskListData(taskList: TaskListDb): TaskList {
     taskList.timeBlockEntries.forEach((entry) => {
       if (entry.priority === undefined) {
         entry.priority = 5;
+      }
+
+      if (entry.day === undefined) {
+        console.log("migrating entry", entry, "to day 0");
+        entry.day = 0;
       }
     });
   }

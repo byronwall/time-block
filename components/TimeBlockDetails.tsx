@@ -1,5 +1,10 @@
-import { Button, Card, EditableText, Switch } from "@blueprintjs/core";
-import { useContext, useState } from "react";
+import {
+  Button,
+  ButtonGroup,
+  Card,
+  EditableText,
+  Switch,
+} from "@blueprintjs/core";
 
 import { TimeBlockEntry } from "../model/model";
 import { useTaskStore } from "../model/TaskStore";
@@ -9,13 +14,17 @@ interface TimeBlockDetailsProps {
   block: TimeBlockEntry;
 }
 
+const durationsCommon = [15, 30, 45, 60, 90, 120, 180];
+
 export function TimeBlockDetails(props: TimeBlockDetailsProps) {
   const { block } = props;
 
-  const xxxPartial = useTaskStore((store) => store.updateTimeBlockEntryPartial);
+  const onChangePartial = useTaskStore(
+    (store) => store.updateTimeBlockEntryPartial
+  );
 
   const handleChange = (data: Partial<TimeBlockEntry>) => {
-    xxxPartial(block.id, data);
+    onChangePartial(block.id, data);
   };
 
   const { description, start } = block;
@@ -24,11 +33,17 @@ export function TimeBlockDetails(props: TimeBlockDetailsProps) {
     (store) => store.getColorFromPriority
   );
 
-  const durationsCommon = [15, 30, 45, 60, 90, 120, 180];
+  const onIncrementDay = () => {
+    handleChange({ day: block.day + 1 });
+  };
+
+  const onDecrementDay = () => {
+    handleChange({ day: block.day - 1 });
+  };
+
   return (
     <Card
       style={{
-        height: 250,
         width: 200,
       }}
     >
@@ -42,7 +57,6 @@ export function TimeBlockDetails(props: TimeBlockDetailsProps) {
             multiline
           />
         </div>
-        <div>{start}</div>
 
         <div>
           {durationsCommon.map((duration) => (
@@ -92,6 +106,16 @@ export function TimeBlockDetails(props: TimeBlockDetailsProps) {
               handleChange({ isFrozen })
             )}
           />
+        </div>
+        <div>
+          <ButtonGroup>
+            <Button
+              icon="arrow-left"
+              onClick={onDecrementDay}
+              disabled={block.day === 0}
+            />
+            <Button icon="arrow-right" onClick={onIncrementDay} />
+          </ButtonGroup>
         </div>
       </div>
     </Card>
