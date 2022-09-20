@@ -53,6 +53,8 @@ export function TimeBlockUnit(props: TimeBlockUnitProps) {
         position: "absolute",
         top: hourScale(block.start),
         left: column * 200,
+        maxHeight: height,
+        minHeight: height,
       }
     : { position: "relative" };
 

@@ -4,6 +4,7 @@
 
 - Improve styling of multiple days - center the main view
 - Allow time block units to grow a bit to fit text
+- Add a shortcut to rebalance each day on its own - need better visuals or a shortcut that is day-aware
 
 ## 0.0.18 -- 2022-09-17 22:52:10
 

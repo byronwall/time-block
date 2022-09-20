@@ -224,6 +224,19 @@ export function TimeBlockDay(props: TimeBlockDayProps) {
             shouldColorDefault
           />
         ))}
+
+        <div
+          style={{
+            height: 20,
+            width: 20,
+            background: "red",
+            position: "absolute",
+            top: -20,
+          }}
+          onClick={() => {
+            onRebalance(day);
+          }}
+        />
       </div>
     </div>
   );

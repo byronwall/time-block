@@ -23,7 +23,7 @@ interface TaskStore {
 
   onSaveActiveTasks: () => void;
 
-  onRebalanceTasks: () => void;
+  onRebalanceTasks: (day?: number) => void;
 
   shouldScheduleAfterCurrent: boolean;
   setShouldScheduleAfterCurrent: (shouldScheduleAfterCurrent: boolean) => void;
@@ -86,17 +86,22 @@ export const useTaskStore = create<Store>((set, get) => ({
   setShouldScheduleAfterCurrent: (shouldScheduleAfterCurrent) => {
     set({ shouldScheduleAfterCurrent });
   },
-  onRebalanceTasks: () => {
+  onRebalanceTasks: (day = 0) => {
     // TODO: verify that this works?
     // TODO: this can now process the draft directly... update
+
+    // TODO: handle the case where the shortcut is used for all days
     const nowInRightUnits = parser(dateToStrLocal(new Date()));
 
     const schedStartTime = get().shouldScheduleAfterCurrent
       ? +nowInRightUnits
       : +get().dateStart();
 
+    const taskForDesiredDay = get().taskList.timeBlockEntries.filter(
+      (entry) => entry.day === day
+    );
     const newEntries = getTImeBlocksWithoutOverlap(
-      get().taskList.timeBlockEntries,
+      taskForDesiredDay,
       schedStartTime
     );
 
