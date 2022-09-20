@@ -203,9 +203,9 @@ export default function TimeBlockView(props: TimeBlockViewProps) {
   const taskListName = useTaskStore((state) => state.taskList.name);
 
   // TODO: this pulls in too many changes - tighten scope?
-  const unscheduled = useTaskStore(
-    (state) => state.taskList.timeBlockEntries
-  ).filter((c) => c.start === undefined);
+  const unscheduled = useTaskStore((state) => state.taskList.timeBlockEntries)
+    .filter((c) => c.start === undefined)
+    .sort((a, b) => a.priority - b.priority);
 
   const numberOfDays = useTaskStore((state) => state.numberOfDays)();
 
