@@ -61,3 +61,48 @@ a {
   background-color: #333;
   color: #ffc619;
 }
+
+.time-view-parent {
+  width: 100vw;
+  display: flex;
+  justify-content: center;
+
+  position: absolute;
+  left: 0px;
+
+  margin-bottom: 100px;
+}
+
+.time-view {
+  border: 1px solid #333;
+  display: flex;
+  justify-content: center;
+
+  max-width: 90%;
+
+  min-width: 960px;
+}
+
+.time-block-day {
+  min-width: 100px;
+  width: 200px;
+  max-width: 250px;
+
+  flex-grow: 1;
+  flex-shrink: 1;
+}
+
+.time-block-unit {
+  max-width: 300px;
+
+  max-height: 150px;
+  min-height: 80px;
+
+  flex-grow: 1;
+  flex-shrink: 0.5;
+  flex-basis: 150px;
+}
+
+.time-day-holder {
+  display: flex;
+}

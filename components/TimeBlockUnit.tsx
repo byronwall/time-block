@@ -31,9 +31,11 @@ export function TimeBlockUnit(props: TimeBlockUnitProps) {
   );
 
   const zeroPx = hourScale?.(0) ?? 0;
-  const durationPx = hourScale?.(new Date(block.duration * 1000)) ?? 80;
 
-  const height = Math.max(durationPx - zeroPx, 0);
+  const height =
+    hourScale === undefined
+      ? undefined
+      : Math.max(hourScale(new Date(block.duration * 1000)) - zeroPx, 0);
 
   const [isEdit, setIsEdit] = useState(false);
 
@@ -96,10 +98,10 @@ export function TimeBlockUnit(props: TimeBlockUnitProps) {
 
   return (
     <div
+      className="time-block-unit"
       style={{
         ...style,
         height: height,
-        width: 200,
         border: "1px solid black",
         borderStyle,
         backgroundColor,

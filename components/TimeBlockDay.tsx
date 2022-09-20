@@ -15,8 +15,6 @@ import { TimeBlockSidebarTicks } from "./TimeBlockSidebarTicks";
 import { TimeBlockUnit } from "./TimeBlockUnit";
 
 interface TimeBlockDayProps {
-  shouldShowLeftSidebar: boolean;
-
   day: number;
 }
 
@@ -26,7 +24,7 @@ export function TimeBlockDay(props: TimeBlockDayProps) {
   // store array of time blocks in state
 
   // des props
-  const { shouldShowLeftSidebar, day } = props;
+  const { day } = props;
 
   const timeBlocks = useTaskStore(
     (state) => state.taskList.timeBlockEntries
@@ -194,47 +192,38 @@ export function TimeBlockDay(props: TimeBlockDayProps) {
   useHotkeys(hotkeys);
 
   return (
-    <div style={{ marginBottom: 100 }}>
-      <div style={{ display: "flex", marginTop: 20 }}>
-        {shouldShowLeftSidebar && (
-          <TimeBlockSidebarTicks
-            hourScale={hourScale}
-            hours={hours}
-            formatter={formatter}
-          />
-        )}
+    <div style={{ marginBottom: 100, display: "flex", marginTop: 20 }}>
+      <div
+        className="time-block-day"
+        ref={blockDivRef}
+        style={{
+          minHeight: maxHeight,
+          border: "1px solid black",
+          position: "relative",
+        }}
+        onMouseMove={handleMouseMove}
+        onMouseUp={() => setDragId("")}
+      >
         <div
-          ref={blockDivRef}
           style={{
-            width: 250,
-            minHeight: maxHeight,
-            border: "1px solid black",
-            position: "relative",
+            height: 10,
+            width: "100%",
+            background: "#FF9A00",
+            position: "absolute",
+            top: curTimeTop,
           }}
-          onMouseMove={handleMouseMove}
-          onMouseUp={() => setDragId("")}
-        >
-          <div
-            style={{
-              height: 10,
-              width: "100%",
-              background: "#FF9A00",
-              position: "absolute",
-              top: curTimeTop,
-            }}
-          />
+        />
 
-          {scheduledTasks.map((block) => (
-            <TimeBlockUnit
-              key={block.id}
-              hourScale={hourScale}
-              block={block}
-              column={colHash[block.id]}
-              onStartDrag={handleStartDrag}
-              shouldColorDefault
-            />
-          ))}
-        </div>
+        {scheduledTasks.map((block) => (
+          <TimeBlockUnit
+            key={block.id}
+            hourScale={hourScale}
+            block={block}
+            column={colHash[block.id]}
+            onStartDrag={handleStartDrag}
+            shouldColorDefault
+          />
+        ))}
       </div>
     </div>
   );

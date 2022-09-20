@@ -5,6 +5,7 @@ import {
   HotkeyConfig,
   useHotkeys,
 } from "@blueprintjs/core";
+import { scaleTime, timeHour, utcFormat } from "d3";
 import { isEqual } from "lodash-es";
 import { useEffect, useMemo } from "react";
 
@@ -12,6 +13,7 @@ import { AddNewTask } from "../../components/AddNewTask";
 import { SearchOverlay } from "../../components/SearchOverlay";
 import { SettingsPopover } from "../../components/SettingsPopover";
 import { TimeBlockDay } from "../../components/TimeBlockDay";
+import { TimeBlockSidebarTicks } from "../../components/TimeBlockSidebarTicks";
 import { TimeBlockUnit } from "../../components/TimeBlockUnit";
 import { TaskList } from "../../model/model";
 import { useTaskStore } from "../../model/TaskStore";
@@ -209,6 +211,14 @@ export default function TimeBlockView(props: TimeBlockViewProps) {
 
   const daysToRender = Array.from(Array(numberOfDays + 1).keys());
 
+  const dateStart = useTaskStore((state) => state.dateStart)();
+  const dateEnd = useTaskStore((state) => state.dateEnd)();
+  const hourScale = scaleTime().domain([dateStart, dateEnd]).range([0, 600]);
+
+  const hours = hourScale.ticks(timeHour);
+
+  const formatter = utcFormat("%H:%M");
+
   return (
     <>
       <H2>
@@ -233,14 +243,19 @@ export default function TimeBlockView(props: TimeBlockViewProps) {
           </div>
         </div>
 
-        <div style={{ display: "flex" }}>
-          {daysToRender.map((day) => (
-            <TimeBlockDay
-              key={day}
-              shouldShowLeftSidebar={day === 0}
-              day={day}
+        <div className="time-view-parent">
+          <div className="time-view" style={{ display: "flex" }}>
+            <TimeBlockSidebarTicks
+              hourScale={hourScale}
+              hours={hours}
+              formatter={formatter}
             />
-          ))}
+            <div className="time-day-holder">
+              {daysToRender.map((day) => (
+                <TimeBlockDay key={day} day={day} />
+              ))}
+            </div>
+          </div>
         </div>
         <SearchOverlay />
       </>

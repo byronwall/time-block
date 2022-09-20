@@ -17,6 +17,7 @@ export function TimeBlockSidebarTicks(props: TimeBlockSidebarTicksProps) {
       style={{
         position: "relative",
         width: 100,
+        marginTop: 20,
       }}
     >
       {hours.map((hour, idx) => (

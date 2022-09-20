@@ -1,5 +1,10 @@
 # Time Block changelog
 
+## 0.0.19 -- 2022-09-19 23:41:20
+
+- Improve styling of multiple days - center the main view
+- Allow time block units to grow a bit to fit text
+
 ## 0.0.18 -- 2022-09-17 22:52:10
 
 - Move add new task form into its own component - reduce renders
